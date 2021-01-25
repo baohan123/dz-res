@@ -8,6 +8,7 @@ class DzImApplicationTests {
 
     @Test
     void contextLoads() {
+        System.out.println();
     }
 
 }
