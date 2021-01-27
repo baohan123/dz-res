@@ -1,4 +1,4 @@
-package com.dz.dzim.interceptor;
+package com.dz.dzim.config.interceptor;
 
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;

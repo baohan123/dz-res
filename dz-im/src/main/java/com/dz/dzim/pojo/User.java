@@ -4,6 +4,7 @@ import com.dz.dzim.common.MessageTypeEnum;
 
 import java.io.Serializable;
 import java.security.Principal;
+import java.util.Date;
 
 /**
  * 用户信息
@@ -36,6 +37,32 @@ public class User implements Principal, Serializable {
      */
     private MessageTypeEnum status;
 
+    /**
+     * 上线时间
+     */
+    private Date onLineDate;
+    public User(){
+    }
+
+    public User(String userId){
+        this.userId = userId;
+    }
+    public User(String userId,Date onLineDate){
+        this.userId = userId;
+        this.onLineDate = onLineDate;
+    }
+
+
+    public User(String userId, String username, String address, String avatar, MessageTypeEnum status, Date onLineDate) {
+        this.userId = userId;
+        this.username = username;
+        this.address = address;
+        this.avatar = avatar;
+        this.status = status;
+        this.onLineDate = onLineDate;
+    }
+
+
     @Override
     public String getName() {
         return userId;
@@ -49,6 +76,7 @@ public class User implements Principal, Serializable {
                 ", address='" + address + '\'' +
                 ", avatar='" + avatar + '\'' +
                 ", status=" + status +
+                ", onLineDate=" + onLineDate +
                 '}';
     }
 
@@ -96,5 +124,12 @@ public class User implements Principal, Serializable {
         this.status = status;
     }
 
+    public Date getOnLineDate() {
+        return onLineDate;
+    }
+
+    public void setOnLineDate(Date onLineDate) {
+        this.onLineDate = onLineDate;
+    }
 
 }

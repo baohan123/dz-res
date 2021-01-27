@@ -1,5 +1,6 @@
 package com.dz.dzim;
 
+import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.amqp.rabbit.annotation.EnableRabbit;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
@@ -9,6 +10,7 @@ import org.springframework.context.annotation.Bean;
 
 @SpringBootApplication
 @EnableRabbit
+@MapperScan("com.dz")
 /**开启rabbitmq*/
 public class DzImApplication {
 

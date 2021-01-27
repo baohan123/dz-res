@@ -5,9 +5,8 @@ package com.dz.dzim.common;/**
  * @date: 2021/1/22 14:10
  */
 
-import com.dz.dzim.pojo.OnlineUserVo;
+import com.dz.dzim.pojo.vo.OnlineUserVo;
 
-import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
@@ -18,9 +17,11 @@ import java.util.Map;
  * @date 2021/1/22 14:10
  */
 public class Result <T>  {
+
     private long code;
     private String message;
     private T data;
+
 
     public static Result<Map<String, String>> success(Map<String, String> map) {
         Result result = new Result();
@@ -28,6 +29,14 @@ public class Result <T>  {
         result.setMessage("ok");
         result.setData(map);
          return result;
+    }
+
+    public static Result<Object> success(Object o) {
+        Result result = new Result();
+        result.setCode(200);
+        result.setMessage("ok");
+        result.setData(o);
+        return result;
     }
 
     public static Result<Integer> success(Integer online) {

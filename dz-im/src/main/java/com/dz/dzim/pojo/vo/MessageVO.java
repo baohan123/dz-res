@@ -1,13 +1,10 @@
-package com.dz.dzim.pojo;
-
+package com.dz.dzim.pojo.vo;
 
 import com.dz.dzim.common.MessageTypeEnum;
+import com.dz.dzim.pojo.User;
 
 import java.io.Serializable;
 import java.util.Arrays;
-import java.util.Date;
-import java.util.Locale;
-import java.util.TimeZone;
 
 /**
  * 消息视图
@@ -28,12 +25,10 @@ public class MessageVO implements Serializable {
     /**
      * 消息信息
      */
-
     private String message;
     /**
      * 图片
      */
-
     private String image;
     /**
      * 消息类型
@@ -42,7 +37,11 @@ public class MessageVO implements Serializable {
      * REVOKE, //撤回消息
      * ROBOT,  //机器人及其他
      */
-    private MessageTypeEnum type;
+    private MessageTypeEnum msgType;
+    /**
+     * 发送方式  用户发送客户端  /客服端发送给用户
+     */
+    private MessageTypeEnum  sendType;
     /**
      * 消息id
      */
@@ -62,6 +61,13 @@ public class MessageVO implements Serializable {
     }
 
 
+    public MessageTypeEnum getSendType() {
+        return sendType;
+    }
+
+    public void setSendType(MessageTypeEnum sendType) {
+        this.sendType = sendType;
+    }
 
     public User getUser() {
         return user;
@@ -87,12 +93,21 @@ public class MessageVO implements Serializable {
         this.image = image;
     }
 
-    public MessageTypeEnum getType() {
-        return type;
+
+    public Long getTimestamp() {
+        return timestamp;
     }
 
-    public void setType(MessageTypeEnum type) {
-        this.type = type;
+    public void setTimestamp(Long timestamp) {
+        this.timestamp = timestamp;
+    }
+
+    public MessageTypeEnum getMsgType() {
+        return msgType;
+    }
+
+    public void setMsgType(MessageTypeEnum msgType) {
+        this.msgType = msgType;
     }
 
     public String getMessageId() {
@@ -122,40 +137,39 @@ public class MessageVO implements Serializable {
     @Override
     public String toString() {
         return "MessageVO{" +
+                "timestamp=" + timestamp +
                 ", user=" + user +
                 ", message='" + message + '\'' +
                 ", image='" + image + '\'' +
-                ", type=" + type +
+                ", msgType=" + msgType +
                 ", messageId='" + messageId + '\'' +
                 ", sendTime='" + sendTime + '\'' +
                 ", receiver=" + Arrays.toString(receiver) +
                 '}';
     }
 
-
-    public MessageVO(User user, String message, MessageTypeEnum type, String[] receiver, String image) {
+    public MessageVO(User user, String message, MessageTypeEnum msgType, String[] receiver, String image) {
         this.user = user;
         this.message = message;
         this.image = image;
-        this.type = type;
+        this.msgType = msgType;
         this.receiver = receiver;
     }
 
-    public MessageVO(User user, String message, MessageTypeEnum type, String[] receiver) {
+    public MessageVO(User user, String message, MessageTypeEnum msgType, String[] receiver) {
         this.user = user;
         this.message = message;
-        this.type = type;
+        this.msgType = msgType;
         this.receiver = receiver;
     }
 
-
-
-    public MessageVO(User user, String message, MessageTypeEnum type) {
+    public MessageVO(User user, String message, MessageTypeEnum msgType, MessageTypeEnum sendType) {
         this.user = user;
         this.message = message;
-        this.type = type;
+        this.msgType = msgType;
+        this.sendType = sendType;
     }
-
-
+    public MessageVO() {
+    }
 
 }

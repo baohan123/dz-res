@@ -1,15 +1,14 @@
 package com.dz.dzim.controller;
 
 import com.dz.dzim.common.Result;
-import com.dz.dzim.pojo.MsgData;
-import com.dz.dzim.pojo.OnlineUser;
-import com.dz.dzim.pojo.OnlineUserVo;
+import com.dz.dzim.pojo.vo.OnlineUserVo;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 服务器给客户推送消息
@@ -27,6 +26,7 @@ public class SendToMsgController {
 
     /**
      * 一对一发送
+     *
      * @param userId
      * @param msg
      * @return
@@ -35,7 +35,7 @@ public class SendToMsgController {
     @GetMapping("/sendTo")
     public String sendTo(@RequestParam("userId") String userId, @RequestParam("msg") String msg) throws IOException {
 
-        webSocket.sendMessageTo(msg,userId);
+        webSocket.sendMessageTo(msg, userId);
 
         return "推送成功";
     }
@@ -43,6 +43,7 @@ public class SendToMsgController {
 
     /**
      * 群发
+     *
      * @param msg
      * @return
      * @throws IOException
@@ -50,19 +51,19 @@ public class SendToMsgController {
     @GetMapping("/sendAll")
     public String sendAll(@RequestParam("msg") String msg) throws IOException {
 
-        String fromUserId="system";//其实没用上
-        webSocket.sendMessageAll(msg,fromUserId);
+        String fromUserId = "system";//其实没用上
+        webSocket.sendMessageAll(msg, fromUserId);
 
         return "推送成功";
     }
 
     @GetMapping("/sendMq")
     public String sendMq() throws IOException {
-
-        MsgData userTest = new MsgData();
-        userTest.setDesc("");
-        userTest.setTime("20200119");
-        userTest.setType("01");
+//
+//        MsgData userTest = new MsgData();
+//        userTest.setDesc("");
+//        userTest.setTime("20200119");
+//        userTest.setType("01");
 
         /**1.指定发送的交换机
          *      发送的消息会先发送给 virtual-host: /(顶级路由) 再由它到交换机
@@ -76,7 +77,7 @@ public class SendToMsgController {
          *exchange 交换机-> rountingkey 路由  -->queues 指定队列
          *
          * */
-        rabbitTemplate.convertAndSend("boot_topic_exchange", "boot.haha", userTest);
+        //   rabbitTemplate.convertAndSend("boot_topic_exchange", "boot.haha", userTest);
         return "推送成功";
     }
 
@@ -84,16 +85,14 @@ public class SendToMsgController {
      * TODO 获取当前在线人数
      */
     @RequestMapping(value = "/getOnlineCount", method = RequestMethod.GET)
-    public Result<Integer> getOnlineCount() {
-        Integer onlineCount = webSocketImpl2.getOnlineCount();
+    public Result<Map<String, String>> getOnlineCount() {
+        Map<String, String> onlineCount = webSocketImpl2.getOnlineCount();
         return Result.success(onlineCount);
     }
 
     @RequestMapping(value = "/getOnlineUsersList", method = RequestMethod.GET)
-    public Result<List<OnlineUserVo>> getOnlineUsersList() {
-        List<OnlineUserVo> onlineUsers = webSocketImpl2.getOnlineUsers();
+    public Result<List<OnlineUserVo>> getOnlineUsersList(@RequestParam("userType") String userType) {
+        List<OnlineUserVo> onlineUsers = webSocketImpl2.getOnlineUsers(userType);
         return Result.success(onlineUsers);
     }
-
-
 }

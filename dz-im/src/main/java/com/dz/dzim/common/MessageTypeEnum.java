@@ -7,10 +7,16 @@ package com.dz.dzim.common;
  * @date 2019/3/22
  */
 public enum MessageTypeEnum {
-    SYSTEM,  //系统消息
-    USER,   //用户消息
+    SYSTEM,  //代表系统消息
+    USER,   //代表用户消息
+    KFUSER,// 代表客服消息
     REVOKE, //撤回消息
     ROBOT,  //机器人及其他
-    ONLINE, //上线 提醒
-    OFFLINE// 下线
+    ONLINE, //上线
+    OFFLINE,// 下线
+    ZYZX,//逐一执行
+    ZXLJS,// 客户消息接收策略 最下接受人数有限建立连接
+    //消息发送方式
+    USETTOCLENT, //用户发送给客服客户端
+    CLENTTOUSER //客户端发送给用户
 }

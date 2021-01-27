@@ -2,15 +2,13 @@
 <!DOCTYPE HTML>
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml"
       xmlns:th="http://www.thymeleaf.org">
-
-
 <head>
     <title>Test My WebSocket</title>
 </head>
 
 
 <body>
-TestWebSocket
+index_kf2
 <input  id="text" type="text" />
 <button onclick="send()">SEND MESSAGE</button>
 <button onclick="closeWebSocket()">CLOSE</button>
@@ -24,7 +22,7 @@ TestWebSocket
     //判断当前浏览器是否支持WebSocket
     if('WebSocket' in window){
         //连接WebSocket节点
-        websocket = new WebSocket("ws://localhost:8999/connectWebSocket3/a1");
+        websocket = new WebSocket("ws://localhost:8999/connectWebSocket2/kf2/KFUSER/CLENTTOUSER");
     }
     else{
         alert('Not support websocket')

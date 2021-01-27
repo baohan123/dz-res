@@ -1,12 +1,4 @@
-package com.dz.dzim.pojo;/**
- * @description: some desc
- * @author: lenovo
- * @email: xxx@xx.com
- * @date: 2021/1/22 13:19
- */
-
-import javax.websocket.Session;
-import java.util.Date;
+package com.dz.dzim.pojo.vo;
 
 /**
  * @author baohan
@@ -29,7 +21,6 @@ public class OnlineUserVo {
      * 连接时间
      */
     private String createTime;
-
 
 
     public String getUserId() {
