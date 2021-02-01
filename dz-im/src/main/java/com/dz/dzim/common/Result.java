@@ -62,6 +62,8 @@ public class Result <T>  {
     }
 
 
+
+
     public long getCode() {
         return code;
     }

@@ -1,10 +1,10 @@
-package com.dz.dzim.common;
+package com.dz.dzim.common.enums;
 
 /**
- * 消息类型枚举
- *
- * @author yanpanyi
- * @date 2019/3/22
+ * @author baohan
+ * @className MessageTypeEnum
+ * @description TODO
+ * @date 2021/1/28 18:09
  */
 public enum MessageTypeEnum {
     SYSTEM,  //代表系统消息
@@ -18,5 +18,8 @@ public enum MessageTypeEnum {
     ZXLJS,// 客户消息接收策略 最下接受人数有限建立连接
     //消息发送方式
     USETTOCLENT, //用户发送给客服客户端
-    CLENTTOUSER //客户端发送给用户
+    CLENTTOUSER, //客户端发送给用户
+    SYSYTEMTOUSER, //系统发送至客户
+    SYSTEMTOCLENT,//系统发送至客服
+    SENDTYPES// 发送类型
 }

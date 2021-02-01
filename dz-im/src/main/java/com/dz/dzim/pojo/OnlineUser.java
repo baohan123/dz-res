@@ -5,10 +5,8 @@ package com.dz.dzim.pojo;/**
  * @date: 2021/1/22 13:19
  */
 
-import com.dz.dzim.common.MessageTypeEnum;
+import com.dz.dzim.common.enums.MessageTypeEnum;
 
-import java.time.LocalDateTime;
-import java.util.Date;
 import java.util.LinkedHashMap;
 import javax.websocket.Session;
 

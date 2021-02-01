@@ -1,6 +1,6 @@
 package com.dz.dzim.controller;
 
-import com.dz.dzim.service.SendMsgService;
+//import com.dz.dzim.service.SendMsgService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Controller;
@@ -12,8 +12,8 @@ import org.springframework.web.bind.annotation.RequestMethod;
 @Component
 public class IndexController {
 
-    @Autowired
-    private SendMsgService sendMsgService;
+//    @Autowired
+//    private SendMsgService sendMsgService;
     @RequestMapping(value = "/index1", method = RequestMethod.GET)
     public String index1() {
         return "index1";

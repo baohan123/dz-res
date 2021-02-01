@@ -1,6 +1,6 @@
 package com.dz.dzim.pojo;
 
-import com.dz.dzim.common.MessageTypeEnum;
+import com.dz.dzim.common.enums.MessageTypeEnum;
 
 import java.io.Serializable;
 import java.security.Principal;

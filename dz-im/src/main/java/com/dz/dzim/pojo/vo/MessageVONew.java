@@ -2,7 +2,6 @@ package com.dz.dzim.pojo.vo;
 
 import com.dz.dzim.common.enums.MessageTypeEnum;
 import com.dz.dzim.pojo.User;
-
 import java.io.Serializable;
 import java.util.Arrays;
 
@@ -12,12 +11,15 @@ import java.util.Arrays;
  * @author baohan
  * @date 2021/1/22
  */
-public class MessageVO implements Serializable {
+public class MessageVONew implements Serializable {
 
     private static final long serialVersionUID = -1455469852669257711L;
 
     private Long timestamp = System.currentTimeMillis();
-
+    /**
+     * 小会场id
+     */
+    private String meetingId;
     /**
      * 用户
      */
@@ -31,17 +33,14 @@ public class MessageVO implements Serializable {
      */
     private String image;
     /**
-     * 消息类型
-     * SYSTEM,  //系统消息
-     * USER,   //用户消息
-     * REVOKE, //撤回消息
-     * ROBOT,  //机器人及其他
-     */
-    private MessageTypeEnum msgType;
-    /**
-     * 发送方式  用户发送客户端  /客服端发送给用户
+     * 谁发给谁
      */
     private MessageTypeEnum sendType;
+    /**
+     * 说话人类型：
+     * 客服(Waiter)，客户(Member)，系统（System），智能应答（Robot）
+     */
+    private String talkerType;
     /**
      * 消息id
      */
@@ -60,13 +59,12 @@ public class MessageVO implements Serializable {
         return serialVersionUID;
     }
 
-
-    public MessageTypeEnum getSendType() {
-        return sendType;
+    public Long getTimestamp() {
+        return timestamp;
     }
 
-    public void setSendType(MessageTypeEnum sendType) {
-        this.sendType = sendType;
+    public void setTimestamp(Long timestamp) {
+        this.timestamp = timestamp;
     }
 
     public User getUser() {
@@ -93,21 +91,20 @@ public class MessageVO implements Serializable {
         this.image = image;
     }
 
-
-    public Long getTimestamp() {
-        return timestamp;
+    public MessageTypeEnum getSendType() {
+        return sendType;
     }
 
-    public void setTimestamp(Long timestamp) {
-        this.timestamp = timestamp;
+    public void setSendType(MessageTypeEnum sendType) {
+        this.sendType = sendType;
     }
 
-    public MessageTypeEnum getMsgType() {
-        return msgType;
+    public String getTalkerType() {
+        return talkerType;
     }
 
-    public void setMsgType(MessageTypeEnum msgType) {
-        this.msgType = msgType;
+    public void setTalkerType(String talkerType) {
+        this.talkerType = talkerType;
     }
 
     public String getMessageId() {
@@ -133,43 +130,26 @@ public class MessageVO implements Serializable {
     public void setReceiver(String[] receiver) {
         this.receiver = receiver;
     }
+    public MessageVONew(){
 
-    @Override
-    public String toString() {
-        return "MessageVO{" +
-                "timestamp=" + timestamp +
-                ", user=" + user +
-                ", message='" + message + '\'' +
-                ", image='" + image + '\'' +
-                ", msgType=" + msgType +
-                ", messageId='" + messageId + '\'' +
-                ", sendTime='" + sendTime + '\'' +
-                ", receiver=" + Arrays.toString(receiver) +
-                '}';
     }
-
-    public MessageVO(User user, String message, MessageTypeEnum msgType, String[] receiver, String image) {
+    public MessageVONew(Long timestamp, User user, String message, String image, MessageTypeEnum sendType, String talkerType, String messageId, String sendTime, String[] receiver) {
+        this.timestamp = timestamp;
         this.user = user;
         this.message = message;
         this.image = image;
-        this.msgType = msgType;
-        this.receiver = receiver;
-    }
-
-    public MessageVO(User user, String message, MessageTypeEnum msgType, String[] receiver) {
-        this.user = user;
-        this.message = message;
-        this.msgType = msgType;
-        this.receiver = receiver;
-    }
-
-    public MessageVO(User user, String message, MessageTypeEnum msgType, MessageTypeEnum sendType) {
-        this.user = user;
-        this.message = message;
-        this.msgType = msgType;
         this.sendType = sendType;
-    }
-    public MessageVO() {
+        this.talkerType = talkerType;
+        this.messageId = messageId;
+        this.sendTime = sendTime;
+        this.receiver = receiver;
     }
 
+    public String getMeetingId() {
+        return meetingId;
+    }
+
+    public void setMeetingId(String meetingId) {
+        this.meetingId = meetingId;
+    }
 }
