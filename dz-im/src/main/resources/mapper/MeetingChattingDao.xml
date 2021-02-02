@@ -13,8 +13,8 @@
         <result property="serverTime" column="server_time"/>
         <result property="contentRemark" column="content_remark"/>
         <result property="content" column="content"/>
-        <result property="reserved0" column="reserved_0"/>
-        <result property="reserved1" column="reserved_1"/>
+        <result property="addrId" column="addr_id"/>
+        <result property="addrType" column="addr_type"/>
         <result property="reserved2" column="reserved_2"/>
     </resultMap>
 

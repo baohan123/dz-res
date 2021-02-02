@@ -13,25 +13,17 @@ import com.dz.dzim.mapper.MeetingPlazaDao;
 import com.dz.dzim.pojo.OnlineUserNew;
 import com.dz.dzim.pojo.User;
 import com.dz.dzim.pojo.doman.MeetingActorEntity;
-import com.dz.dzim.pojo.doman.MeetingChattingEntity;
-import com.dz.dzim.pojo.doman.MeetingEntity;
-import com.dz.dzim.pojo.doman.MeetingPlazaEntity;
-import com.dz.dzim.pojo.vo.MeetingAndActorEntityVo;
-import com.dz.dzim.pojo.vo.MessageVO;
-import com.dz.dzim.pojo.vo.MessageVONew;
 import com.dz.dzim.service.SessionManage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.socket.*;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
-import javax.websocket.server.PathParam;
 import java.nio.ByteBuffer;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author baohan
@@ -52,11 +44,9 @@ public class MyWebSocketHandler extends TextWebSocketHandler {
     private MeetingActorDao meetingActorDao;
     @Autowired
     private SessionManage sessionManage;
+    //未读列表
+    public Map<Long, List<JSONObject>> unreadList = new ConcurrentHashMap<>();
 
-//    private SessionManage sessionManage = (SessionManage) SpringContextUtil.getApplicationContext().getBean("sessionManage");
-
-
-    // private static final ArrayList<WebSocketSession> users = new ArrayList<WebSocketSession>();
 
     /**
      * 建立成功事件
@@ -88,10 +78,27 @@ public class MyWebSocketHandler extends TextWebSocketHandler {
         JSONObject jsonObject = JSONObject.parseObject(payload);
         String meetingId = jsonObject.getString("meetingId");//小会场id
         Integer contentType = jsonObject.getInteger("contentType");//谁发给谁
+        if (SysConstant.ONE == contentType) {
+            session.sendMessage(new TextMessage(
+                    sessionManage.getObj(SysConstant.ONE, "心跳ok")));
+            return;
+        }
+
+
         String content = jsonObject.getString("content");//发送内容
         Long memberId = jsonObject.getJSONObject("user").getLong("memberId");
         String memberType = jsonObject.getJSONObject("user").getString("memberType");
         Long waiterId = jsonObject.getJSONObject("kf").getLong("waiterId");
+        //未读列表
+        if (null == waiterId && SysConstant.EIGHT == contentType) {
+            JSONObject jsonObject1 = new JSONObject();
+            jsonObject1.put("content", content);
+            jsonObject1.put("addrTime", new Date()); //未读 接受时间
+            unreadList.get(memberId).add(jsonObject);
+            session.sendMessage(new TextMessage(sessionManage.getObj(SysConstant.FIVE, this.unreadList)));
+            return;
+        }
+
         String waiterType = jsonObject.getJSONObject("kf").getString("waiterType");
         //查询子表是否有记录
         List<MeetingActorEntity> byIdAndActor = meetingActorDao.selectList(new QueryWrapper<>(new MeetingActorEntity(meetingId, SysConstant.ZERO)));
@@ -169,14 +176,14 @@ public class MyWebSocketHandler extends TextWebSocketHandler {
         String bigId = (String) attributes.get("bigId");
         String meetingId = (String) attributes.get("meetingId");
         OnlineUserNew onlineUserNew = sessionManage.get(userid);
-        WebSocketSession session1 = onlineUserNew.getSession();
-        sessionManage.remove(userid,bigId,meetingId);
-        if (session1.isOpen()) {
-           //  meetingPlazaDao.update()
-            session1.close();
+        sessionManage.remove(userid, bigId, meetingId);
+        if (session.isOpen()) {
+            //  meetingPlazaDao.update()
+            session.close();
         }
         //
     }
+
     // 处理二进制消息
     @Override
     protected void handleBinaryMessage(WebSocketSession session, BinaryMessage message) {

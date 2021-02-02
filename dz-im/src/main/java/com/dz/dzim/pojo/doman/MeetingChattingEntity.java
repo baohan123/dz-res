@@ -59,13 +59,13 @@ public class MeetingChattingEntity implements Serializable {
      */
     private String content;
     /**
-     * 保留
+     * 收件人id
      */
-    private String reserved0;
+    private Long addrId;
     /**
-     * 保留
+     * 收件人类型
      */
-    private String reserved1;
+    private String addrType;
     /**
      * 保留
      */
@@ -135,20 +135,20 @@ public class MeetingChattingEntity implements Serializable {
         this.content = content;
     }
 
-    public String getReserved0() {
-        return reserved0;
+    public Long getAddrId() {
+        return addrId;
     }
 
-    public void setReserved0(String reserved0) {
-        this.reserved0 = reserved0;
+    public void setAddrId(Long addrId) {
+        this.addrId = addrId;
     }
 
-    public String getReserved1() {
-        return reserved1;
+    public String getAddrType() {
+        return addrType;
     }
 
-    public void setReserved1(String reserved1) {
-        this.reserved1 = reserved1;
+    public void setAddrType(String addrType) {
+        this.addrType = addrType;
     }
 
     public String getReserved2() {
@@ -159,7 +159,7 @@ public class MeetingChattingEntity implements Serializable {
         this.reserved2 = reserved2;
     }
 
-    public MeetingChattingEntity(Long id, Long talker, String talkerType, Integer contentLength, Integer contentType, Long serverTime, String contentRemark, String content, String reserved0, String reserved1, String reserved2) {
+    public MeetingChattingEntity(Long id, Long talker, String talkerType, Integer contentLength, Integer contentType, Long serverTime, String contentRemark, String content, Long addrId, String addrType, String reserved2) {
         this.id = id;
         this.talker = talker;
         this.talkerType = talkerType;
@@ -168,8 +168,8 @@ public class MeetingChattingEntity implements Serializable {
         this.serverTime = serverTime;
         this.contentRemark = contentRemark;
         this.content = content;
-        this.reserved0 = reserved0;
-        this.reserved1 = reserved1;
+        this.addrId = addrId;
+        this.addrType = addrType;
         this.reserved2 = reserved2;
     }
 
@@ -183,8 +183,8 @@ public class MeetingChattingEntity implements Serializable {
                 ", serverTime=" + serverTime +
                 ", contentRemark='" + contentRemark + '\'' +
                 ", content='" + content + '\'' +
-                ", reserved0='" + reserved0 + '\'' +
-                ", reserved1='" + reserved1 + '\'' +
+                ", addrId='" + addrId + '\'' +
+                ", addrType='" + addrType + '\'' +
                 ", reserved2='" + reserved2 + '\'' +
                 '}';
     }

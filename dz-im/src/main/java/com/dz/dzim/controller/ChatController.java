@@ -11,8 +11,10 @@ import com.dz.dzim.common.SysConstant;
 import com.dz.dzim.common.enums.CodeEnum;
 import com.dz.dzim.common.enums.inter.Code;
 import com.dz.dzim.mapper.ChatRecordMapper;
+import com.dz.dzim.mapper.MeetingChattingDao;
 import com.dz.dzim.mapper.MeetingDao;
 import com.dz.dzim.mapper.MeetingPlazaDao;
+import com.dz.dzim.pojo.doman.MeetingChattingEntity;
 import com.dz.dzim.pojo.doman.MeetingEntity;
 import com.dz.dzim.pojo.doman.MeetingPlazaEntity;
 import com.dz.dzim.pojo.doman.MsgRecordsEntity;
@@ -41,6 +43,9 @@ public class ChatController {
 
     @Autowired
     private MeetingDao meetingDao;
+
+    @Autowired
+    private MeetingChattingDao meetingChattingDao;
 
     /**
      * @param username 查询条件
@@ -75,9 +80,16 @@ public class ChatController {
                 return new ResponseVO(CodeEnum.CREATION);
             }
         } else {
-            meetingPlazaDao.insert(new MeetingPlazaEntity(queryEntity.get(SysConstant.ZERO).getNextId(), userId, talkerType,
-                    null, new Date(), null, SysConstant.ONE,
-                    queryEntity.get(SysConstant.ZERO).getId(), GeneralUtils.randomUUID(SysConstant.ELEVEN)));
+            meetingPlazaDao.insert(new MeetingPlazaEntity(
+                    queryEntity.get(SysConstant.ZERO).getNextId(),
+                    userId,
+                    talkerType,
+                    null,
+                    new Date(),
+                    null,
+                    SysConstant.ONE,
+                    queryEntity.get(SysConstant.ZERO).getId(),
+                    GeneralUtils.randomUUID(SysConstant.ELEVEN)));
         }
         return new ResponseVO(id);
     }
@@ -94,5 +106,27 @@ public class ChatController {
             return new ResponseVO(CodeEnum.CREATION);
         }
     }
+
+
+    /**
+     * 分页查询聊天记录
+     */
+    @PostMapping("/queryChat")
+    public ResponseVO queryChat(Long talker, Integer pageNum, Integer pageSize) {
+        pageNum = null == pageNum ? 0 : pageNum;
+        pageSize = null == pageSize ? 0 : pageSize;
+        Page<MeetingChattingEntity> page = new Page<>(pageNum, pageSize);
+        //如果是用户
+        QueryWrapper<MeetingChattingEntity> queryWrapper = new QueryWrapper();
+        //条件查询
+        queryWrapper.eq("talker", talker).or().eq("addr_id", talker).orderByDesc("server_time");
+
+        Page<MeetingChattingEntity> meetingChattingEntityPage = meetingChattingDao.selectPage(page, queryWrapper);
+
+        //  queryWrapper.or().
+
+        return new ResponseVO(meetingChattingEntityPage);
+    }
+
 
 }

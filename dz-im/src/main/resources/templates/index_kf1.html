@@ -74,7 +74,13 @@ index_kf1
     //发送消息
     function send() {
         var message = document.getElementById('text').value;
-        websocket.send(message);
+        const msg ={
+            smartId:'12',
+            userType:'0',
+            txt:message
+        }
+        JSON.stringify(msg)
+        websocket.send(msg);
     }
 </script>
 </html>
