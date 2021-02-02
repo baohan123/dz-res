@@ -1,36 +1,24 @@
 package com.dz.dzim.config.interceptor;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.dz.dzim.common.GeneralUtils;
 import com.dz.dzim.common.SysConstant;
-import com.dz.dzim.common.enums.MessageTypeEnum;
-import com.dz.dzim.config.SpringContextUtil;
 import com.dz.dzim.mapper.MeetingActorDao;
-import com.dz.dzim.mapper.MeetingChattingDao;
-import com.dz.dzim.mapper.MeetingDao;
 import com.dz.dzim.mapper.MeetingPlazaDao;
 import com.dz.dzim.pojo.OnlineUserNew;
-import com.dz.dzim.pojo.User;
 import com.dz.dzim.pojo.doman.MeetingActorEntity;
-import com.dz.dzim.pojo.doman.MeetingChattingEntity;
-import com.dz.dzim.pojo.doman.MeetingEntity;
-import com.dz.dzim.pojo.doman.MeetingPlazaEntity;
-import com.dz.dzim.pojo.vo.MeetingAndActorEntityVo;
-import com.dz.dzim.pojo.vo.MessageVO;
-import com.dz.dzim.pojo.vo.MessageVONew;
 import com.dz.dzim.service.SessionManage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.BeanUtils;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.socket.*;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
-import javax.websocket.server.PathParam;
 import java.nio.ByteBuffer;
+import java.security.Principal;
 import java.util.*;
 
 /**
@@ -45,6 +33,9 @@ public class MyWebSocketHandler extends TextWebSocketHandler {
 
     @Autowired
     private MeetingPlazaDao meetingPlazaDao;
+
+    @Autowired
+    RabbitTemplate rabbitTemplate;
 
 
     //小会场关联表
@@ -83,6 +74,8 @@ public class MyWebSocketHandler extends TextWebSocketHandler {
      */
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
+
+        Principal principal = session.getPrincipal();
         System.out.println("进入了工具类");
         String payload = message.getPayload();
         JSONObject jsonObject = JSONObject.parseObject(payload);
@@ -97,15 +90,20 @@ public class MyWebSocketHandler extends TextWebSocketHandler {
         List<MeetingActorEntity> byIdAndActor = meetingActorDao.selectList(new QueryWrapper<>(new MeetingActorEntity(meetingId, SysConstant.ZERO)));
         //未建立会场
         if (byIdAndActor.size() == 0) {
-            int insert1 = meetingActorDao.insert(new MeetingActorEntity(null, memberId, memberType,
+            MeetingActorEntity meetingActorEntity = new MeetingActorEntity(null, memberId, memberType,
                     null, meetingId, null,
                     new Date(), null,
-                    SysConstant.ZERO, null));
+                    SysConstant.ZERO, null);
 
-            int insert = meetingActorDao.insert(new MeetingActorEntity(null, waiterId, waiterType,
+            rabbitTemplate.convertAndSend("imageExchange","img.#", JSON.toJSONString(meetingActorEntity));
+
+            MeetingActorEntity meetingActorEntity1 = new MeetingActorEntity(null, waiterId, waiterType,
                     null, meetingId, null,
                     new Date(), null,
-                    SysConstant.ZERO, null));
+                    SysConstant.ZERO, null);
+
+            rabbitTemplate.convertAndSend("imageExchange","img.#", JSON.toJSONString(meetingActorEntity1));
+
         }
         //收信人
         Long addr = new Long(0);

@@ -3,12 +3,20 @@
       xmlns:th="http://www.thymeleaf.org">
 <head>
     <title>Test My WebSocket</title>
+    <style>
+        .demo{
+            width: 300px;
+            height: 100px;
+        }
+    </style>
 </head>
 
 
 <body>
 index_kf1
-<input id="text" type="text"/>
+<br>
+<textarea id="text" rows="10" cols="50"></textarea>
+
 <button onclick="send()">SEND MESSAGE</button>
 <button onclick="closeWebSocket()">CLOSE</button>
 <div id="message"></div>
@@ -75,6 +83,7 @@ index_kf1
     function send() {
         var message = document.getElementById('text').value;
         websocket.send(message);
+
     }
 </script>
 </html>

@@ -18,15 +18,13 @@ public class DzImApplication {
         SpringApplication.run(DzImApplication.class, args);
     }
 
-
     /**这里也需要设置消息转换类型
      * 和发送的消息类型一定要对应
      * 不然对象接受json启动主程序类时就会报错
      * */
     @Bean
     public MessageConverter messageConverter(){
-
         return new Jackson2JsonMessageConverter();
-
     }
+
 }

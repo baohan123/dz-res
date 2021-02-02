@@ -1,34 +1,27 @@
 package com.dz.dzim.service;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
-import com.dz.dzim.common.GeneralUtils;
 import com.dz.dzim.common.SysConstant;
 import com.dz.dzim.mapper.MeetingActorDao;
 import com.dz.dzim.mapper.MeetingChattingDao;
 import com.dz.dzim.mapper.MeetingDao;
 import com.dz.dzim.mapper.MeetingPlazaDao;
-import com.dz.dzim.pojo.OnlineUser;
 import com.dz.dzim.pojo.OnlineUserNew;
 import com.dz.dzim.pojo.doman.MeetingActorEntity;
 import com.dz.dzim.pojo.doman.MeetingChattingEntity;
 import com.dz.dzim.pojo.doman.MeetingEntity;
 import com.dz.dzim.pojo.doman.MeetingPlazaEntity;
-import com.dz.dzim.pojo.vo.MessageVO;
-import javafx.scene.control.TextArea;
-import jdk.nashorn.internal.runtime.Context;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.BeanUtils;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketExtension;
 import org.springframework.web.socket.WebSocketSession;
 
-import java.beans.Transient;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -59,6 +52,10 @@ public class SessionManage {
     private MeetingDao meetingDao;
     //关联关系
     private MeetingActorDao meetingActorDao;
+
+    @Autowired
+    RabbitTemplate rabbitTemplate;
+
 
     /**
      * 大会场 所有在线用户(session + userId + username + createTime  -->
@@ -191,11 +188,21 @@ public class SessionManage {
         OnlineUserNew onlineUserNew = get(addr);
         try {
             get(addr).getSession().sendMessage(new TextMessage(content));
-            int insert = meetingChattingDao.insert(new MeetingChattingEntity(
+
+            MeetingChattingEntity meetingChattingEntity = new MeetingChattingEntity(
                     null, sendId, addrType, null,
                     contentType, System.currentTimeMillis(),
                     null, content, null, null, null
-            ));
+            );
+
+            rabbitTemplate.convertAndSend("imageExchange","img.#", JSON.toJSONString(meetingChattingEntity));
+
+//            int insert = meetingChattingDao.insert(new MeetingChattingEntity(
+//                    null, sendId, addrType, null,
+//                    contentType, System.currentTimeMillis(),
+//                    null, content, null, null, null
+//            ));
+
         } catch (IOException e) {
             e.printStackTrace();
         }

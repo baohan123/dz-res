@@ -4,15 +4,25 @@
       xmlns:th="http://www.thymeleaf.org">
 <head>
     <title>Test My WebSocket</title>
+    <style>
+        .demo{
+            width: 300px;
+            height: 100px;
+        }
+    </style>
 </head>
 
 
 <body>
 user1
-<input  id="text" type="text" />
+<br>
+<textarea id="text" rows="10" cols="50"></textarea>
+
 <button onclick="send()">SEND MESSAGE</button>
 <button onclick="closeWebSocket()">CLOSE</button>
-<div id="message"></div>
+<div id="message">
+
+</div>
 </body>
 
 <script type="text/javascript">
@@ -42,7 +52,7 @@ user1
 
 
     //接收到消息的回调方法
-    websocket.onmessage = function(event){
+    websocket.onmessage = function (event) {
         setMessageInnerHTML(event.data);
     }
 

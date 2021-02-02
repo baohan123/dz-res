@@ -40,7 +40,7 @@ public class HandshakeInterceptor implements org.springframework.web.socket.serv
 //                    StaticLog.error("非法请求 : projectId = {}", projectId);
         }
         String sessionid = headers.getFirst("sessionid");
-        System.out.println("拦截器获取的sessionid" + sessionid);
+        System.out.println("拦截器获取的sessionid:" + sessionid);
         if (sessionid != null && sessionid != "") {
 //            //检查是否存在
 //            if(redisUtil.isExist(sessionid)) {
