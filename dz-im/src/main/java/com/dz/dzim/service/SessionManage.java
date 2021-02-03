@@ -1,6 +1,7 @@
 package com.dz.dzim.service;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.dz.dzim.common.SysConstant;
@@ -43,15 +44,13 @@ public class SessionManage {
 
     @Autowired
     private MeetingPlazaDao meetingPlazaDao;
-
     @Autowired
-    private SendMsgServiceNew sendMsgServiceNew;
+    private MeetingActorDao meetingActorDao;
 
     //小会场
     @Autowired
     private MeetingDao meetingDao;
-    //关联关系
-    private MeetingActorDao meetingActorDao;
+
 
     @Autowired
     RabbitTemplate rabbitTemplate;
@@ -84,29 +83,30 @@ public class SessionManage {
     public void adds(WebSocketSession session, String talkerType, Long userid, String bigId) {
         clients.put(userid, new OnlineUserNew(bigId, userid, talkerType, session, null, new Date(),
                 null, SysConstant.STATUS_ONE, null, null));
-        String sysMsg = "用户:" + userid + "===类型：" + talkerType + "==加入大会场啦";
-        TextMessage textMessage = new TextMessage(JSONObject.toJSONString(
-                getObj(SysConstant.TWO, (JSONObject) new JSONObject()
-                        .put("desc", sysMsg))));
+        String sysMsg = "用户:" + userid + "  类型：" + talkerType + "==加入大会场上线了啦";
+        JSONObject desc = new JSONObject();
+        desc.put("desc", sysMsg);
+        TextMessage textMessage = new TextMessage(
+                getObj(SysConstant.TWO, desc));
         List<WebSocketExtension> extensions = session.getExtensions();
         sendMessage("all", textMessage, null);
 
-        JSONObject jsonObject = new JSONObject();
+        JSONArray array = new JSONArray();
         List<WebSocketSession> list = new ArrayList<>();
-        jsonObject.put("desc", "用户当前在线列表===》");
         for (Map.Entry<Long, OnlineUserNew> entry : getAll().entrySet()) {
+            JSONObject jsonObject = new JSONObject();
             OnlineUserNew user = entry.getValue();
             if ("member".equals(user.getTalkerType()) && SysConstant.ONE == user.getState()) {
                 jsonObject.put("usetId", user.getTalker());
                 jsonObject.put("bigId", user.getId());
                 jsonObject.put("talkerType", user.getTalkerType());
+                array.add(jsonObject);
             }
             if ("waiter".equals(user.getTalkerType())) {
                 list.add(entry.getValue().getSession());
             }
         }
-        String jsonStr = JSONObject.toJSONString(getObj(SysConstant.STATUS_THREE, jsonObject));
-        TextMessage lb = new TextMessage(jsonStr);
+        TextMessage lb = new TextMessage(getObj(SysConstant.STATUS_THREE, array));
         list.stream().forEach(s -> {
             try {
                 s.sendMessage(lb);
@@ -142,10 +142,15 @@ public class SessionManage {
     public OnlineUserNew remove(Long key, String bigId, String meetingId) {
         OnlineUserNew remove = clients.remove(key);
         meetingPlazaDao.updateById(new MeetingPlazaEntity(bigId, SysConstant.STATUS_FOUR, new Date()));
-        meetingDao.updateById(new MeetingEntity(meetingId, new Date(), SysConstant.STATUS_THREE, SysConstant.STATUS_TOW));
-        UpdateWrapper<MeetingActorEntity> updateWrapper = new UpdateWrapper<>();
-        updateWrapper.eq("meetingId", meetingId).set("is_leaved", SysConstant.TWO);
-        meetingActorDao.update(null, updateWrapper);
+        if (null != meetingId) {
+            meetingDao.updateById(new MeetingEntity(meetingId, new Date(), SysConstant.STATUS_THREE, SysConstant.STATUS_TOW));
+            List<MeetingActorEntity> byIdAndActor = meetingActorDao.selectList(new QueryWrapper<>(new MeetingActorEntity(meetingId, SysConstant.ZERO)));
+            if (SysConstant.ZERO != byIdAndActor.size()) {
+                UpdateWrapper<MeetingActorEntity> updateWrapper = new UpdateWrapper<>();
+                updateWrapper.eq("meetingId", meetingId).set("is_leaved", SysConstant.TWO);
+                meetingActorDao.update(null, updateWrapper);
+            }
+        }
         //调mq 删除
         return remove;
     }
@@ -177,15 +182,14 @@ public class SessionManage {
      * @param msg
      * @return
      */
-    public JSONObject getObj(Integer returnType, JSONObject msg) {
+    public String getObj(Integer returnType, Object msg) {
         JSONObject object = new JSONObject();
         object.put("returnType", returnType);
         object.put("msg", msg);
-        return object;
+        return JSONObject.toJSONString(object);
     }
 
     public void handleTextMeg(Long addr, String content, Long sendId, String addrType, Integer contentType) {
-        OnlineUserNew onlineUserNew = get(addr);
         try {
             get(addr).getSession().sendMessage(new TextMessage(content));
 
@@ -203,6 +207,12 @@ public class SessionManage {
 //                    null, content, null, null, null
 //            ));
 
+            get(addr).getSession().sendMessage(new TextMessage(getObj(SysConstant.STATUS_FOUR, content)));
+            meetingChattingDao.insert(new MeetingChattingEntity(
+                    null, sendId, addrType, null,
+                    contentType, System.currentTimeMillis(),
+                    null, content, addr, addrType, null
+            ));
         } catch (IOException e) {
             e.printStackTrace();
         }

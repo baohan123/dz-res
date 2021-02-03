@@ -84,6 +84,13 @@ index_kf1
         var message = document.getElementById('text').value;
         websocket.send(message);
 
+        const msg ={
+            smartId:'12',
+            userType:'0',
+            txt:message
+        }
+        JSON.stringify(msg)
+        websocket.send(msg);
     }
 </script>
 </html>

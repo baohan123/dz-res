@@ -11,7 +11,9 @@ public class SysConstant {
     public static final int ZERO = 0;
     public static final int ONE = 1;
     public static final int TWO = 2;
+    public static final int FIVE = 5;
     public static final int SEX = 6;
+    public static final int EIGHT = 8;
     /**
      * 用户类型  客服(Waiter)，客户(Member)，系统（System），智能应答（Robot）
      */

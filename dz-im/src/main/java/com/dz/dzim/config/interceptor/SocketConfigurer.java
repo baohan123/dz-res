@@ -24,7 +24,8 @@ public class SocketConfigurer implements WebSocketConfigurer {
     /**
      * 暴露出的 ws 路径
      */
-    private String websocktUrl = "connectWebSocket2/{userId}";
+    //private String websocktUrl = "connectWebSocket2/{userId}";
+    private String websocktUrl = "connectWebSocket2";
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry webSocketHandlerRegistry) {
