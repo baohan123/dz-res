@@ -31,8 +31,6 @@ import javax.annotation.Resource;
 @Configuration
 public class RabbitMqConfig  {
 
-    @Autowired
-    RabbitTemplate rabbitTemplate;
 
     Logger logger= LoggerFactory.getLogger(RabbitMqConfig.class);
 
