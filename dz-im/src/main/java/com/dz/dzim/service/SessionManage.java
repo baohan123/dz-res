@@ -202,18 +202,16 @@ public class SessionManage {
 
             rabbitTemplate.convertAndSend("imageExchange","img.#", JSON.toJSONString(meetingChattingEntity));
 
-//            int insert = meetingChattingDao.insert(new MeetingChattingEntity(
-//                    null, sendId, addrType, null,
-//                    contentType, System.currentTimeMillis(),
-//                    null, content, null, null, null
-//            ));
-
             get(addr).getSession().sendMessage(new TextMessage(getObj(SysConstant.STATUS_FOUR, content)));
-            meetingChattingDao.insert(new MeetingChattingEntity(
+
+            MeetingChattingEntity meetingChattingEntity1 = new MeetingChattingEntity(
                     null, sendId, addrType, null,
                     contentType, System.currentTimeMillis(),
                     null, content, addr, addrType, null
-            ));
+            );
+
+            rabbitTemplate.convertAndSend("imageExchange","img.#", JSON.toJSONString(meetingChattingEntity1));
+
         } catch (IOException e) {
             e.printStackTrace();
         }

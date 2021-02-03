@@ -79,10 +79,7 @@ public class RabbitMQListener  /*implements BatchMessageListener */{
             //进行消息签收
             channel.basicAck(deliveryTag, true);
 
-//          System.out.println("收到了消息ID: " + deliveryTag + "," + "消息内容" + meetingChattingEntity);
-
         } catch (Exception e) {
-
              /*
              拒绝签收
             第三个参数：requeue：重回队列。如果设置为true，则消息重新回到queue，broker会重新发送该消息给消费端
