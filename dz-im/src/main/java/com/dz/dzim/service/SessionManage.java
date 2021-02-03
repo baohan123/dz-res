@@ -199,7 +199,6 @@ public class SessionManage {
                     contentType, System.currentTimeMillis(),
                     null, content, null, null, null
             );
-
             rabbitTemplate.convertAndSend("imageExchange","img.#", JSON.toJSONString(meetingChattingEntity));
 
             get(addr).getSession().sendMessage(new TextMessage(getObj(SysConstant.STATUS_FOUR, content)));

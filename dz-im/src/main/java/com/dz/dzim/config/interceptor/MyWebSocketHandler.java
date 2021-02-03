@@ -33,9 +33,6 @@ public class MyWebSocketHandler extends TextWebSocketHandler {
     private Logger log = LoggerFactory.getLogger(this.getClass());
 
     @Autowired
-    private MeetingPlazaDao meetingPlazaDao;
-
-    @Autowired
     RabbitTemplate rabbitTemplate;
 
 
@@ -91,12 +88,18 @@ public class MyWebSocketHandler extends TextWebSocketHandler {
         Long memberId = jsonObject.getJSONObject("user").getLong("memberId");
         String memberType = jsonObject.getJSONObject("user").getString("memberType");
         Long waiterId = jsonObject.getJSONObject("kf").getLong("waiterId");
-        //未读列表
-        if (null == waiterId && SysConstant.EIGHT == contentType) {
+        //未读列表  未分配小会场
+        if (null == waiterId || null == meetingId) {
             JSONObject jsonObject1 = new JSONObject();
             jsonObject1.put("content", content);
             jsonObject1.put("addrTime", new Date()); //未读 接受时间
-            unreadList.get(memberId).add(jsonObject);
+            if(null != unreadList.get(memberId)){
+                unreadList.get(memberId).add(jsonObject);
+            } else {
+                List<JSONObject> jsonObjects = new ArrayList<>();
+                jsonObjects.add(jsonObject);
+                unreadList.put(memberId,jsonObjects);
+            }
             session.sendMessage(new TextMessage(sessionManage.getObj(SysConstant.FIVE, this.unreadList)));
             return;
         }
@@ -122,9 +125,9 @@ public class MyWebSocketHandler extends TextWebSocketHandler {
 
         }
         //收信人
-        Long addr = new Long(0);
+        Long addr = new Long(SysConstant.ZERO);
         //发信人
-        Long sendId = new Long(0);
+        Long sendId = new Long(SysConstant.ZERO);
         //发件人身份类型、
         String addrType = null;
 
