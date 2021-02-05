@@ -12,16 +12,21 @@ import com.dz.dzim.common.enums.inter.Code;
 public class ErrorCodeException extends RuntimeException  {
 
     private Code code;
+    private String msg;
 
-    public ErrorCodeException(Code code) {
+    public ErrorCodeException(Code code,String msg) {
         this.code = code;
+        this.msg = msg;
     }
 
     public Code getCode() {
         return code;
     }
-
-    public void setCode(Code code) {
+    public String getMsg() {
+        return msg;
+    }
+    public void setCode(Code code,String msg) {
         this.code = code;
+        this.msg = msg;
     }
 }

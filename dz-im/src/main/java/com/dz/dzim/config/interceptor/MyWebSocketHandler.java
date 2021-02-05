@@ -3,7 +3,9 @@ package com.dz.dzim.config.interceptor;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.dz.dzim.common.GeneralUtils;
 import com.dz.dzim.common.SysConstant;
+import com.dz.dzim.config.rabbitmq.RabbitMqConfig;
 import com.dz.dzim.mapper.MeetingActorDao;
 import com.dz.dzim.mapper.MeetingPlazaDao;
 import com.dz.dzim.pojo.OnlineUserNew;
@@ -17,6 +19,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.socket.*;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.security.Principal;
 import java.util.*;
@@ -42,7 +45,7 @@ public class MyWebSocketHandler extends TextWebSocketHandler {
     @Autowired
     private SessionManage sessionManage;
     //未读列表
-    public Map<Long, List<JSONObject>> unreadList = new ConcurrentHashMap<>();
+    public Map<String, List<JSONObject>> unreadList = new ConcurrentHashMap<>();
 
 
     /**
@@ -70,11 +73,7 @@ public class MyWebSocketHandler extends TextWebSocketHandler {
      */
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
-
-        Principal principal = session.getPrincipal();
-        System.out.println("进入了工具类");
-        String payload = message.getPayload();
-        JSONObject jsonObject = JSONObject.parseObject(payload);
+        JSONObject jsonObject = JSONObject.parseObject(message.getPayload());
         String meetingId = jsonObject.getString("meetingId");//小会场id
         Integer contentType = jsonObject.getInteger("contentType");//谁发给谁
         if (SysConstant.ONE == contentType) {
@@ -82,58 +81,31 @@ public class MyWebSocketHandler extends TextWebSocketHandler {
                     sessionManage.getObj(SysConstant.ONE, "心跳ok")));
             return;
         }
-
-
         String content = jsonObject.getString("content");//发送内容
         Long memberId = jsonObject.getJSONObject("user").getLong("memberId");
         String memberType = jsonObject.getJSONObject("user").getString("memberType");
         Long waiterId = jsonObject.getJSONObject("kf").getLong("waiterId");
         //未读列表  未分配小会场
-        if (null == waiterId || null == meetingId) {
-            JSONObject jsonObject1 = new JSONObject();
-            jsonObject1.put("content", content);
-            jsonObject1.put("addrTime", new Date()); //未读 接受时间
-            if(null != unreadList.get(memberId)){
-                unreadList.get(memberId).add(jsonObject);
-            } else {
-                List<JSONObject> jsonObjects = new ArrayList<>();
-                jsonObjects.add(jsonObject);
-                unreadList.put(memberId,jsonObjects);
-            }
-            session.sendMessage(new TextMessage(sessionManage.getObj(SysConstant.FIVE, this.unreadList)));
+        if (unList(meetingId, memberId, waiterId, jsonObject, content, session)) {
             return;
         }
-
         String waiterType = jsonObject.getJSONObject("kf").getString("waiterType");
-        //查询子表是否有记录
-        List<MeetingActorEntity> byIdAndActor = meetingActorDao.selectList(new QueryWrapper<>(new MeetingActorEntity(meetingId, SysConstant.ZERO)));
-        //未建立会场
-        if (byIdAndActor.size() == 0) {
-            MeetingActorEntity meetingActorEntity = new MeetingActorEntity(null, memberId, memberType,
-                    null, meetingId, null,
-                    new Date(), null,
-                    SysConstant.ZERO, null);
 
-            rabbitTemplate.convertAndSend("imageExchange","img.#", JSON.toJSONString(meetingActorEntity));
-
-            MeetingActorEntity meetingActorEntity1 = new MeetingActorEntity(null, waiterId, waiterType,
-                    null, meetingId, null,
-                    new Date(), null,
-                    SysConstant.ZERO, null);
-
-            rabbitTemplate.convertAndSend("imageExchange","img.#", JSON.toJSONString(meetingActorEntity1));
-
-        }
         //收信人
         Long addr = new Long(SysConstant.ZERO);
         //发信人
         Long sendId = new Long(SysConstant.ZERO);
         //发件人身份类型、
         String addrType = null;
-
+        boolean isture = false;
         //内容
         String sysContent = null;
         switch (contentType) {
+            //2 客服领取用户（初次建立小会场）
+            case 2:
+                sessionManage.sendMessageSys(SysConstant.STATUS_TOW, jsonObject, memberId);
+                isture = true;
+                break;
             //用户发送至客服
             case 8:
                 addr = waiterId;
@@ -164,11 +136,81 @@ public class MyWebSocketHandler extends TextWebSocketHandler {
             default:
                 break;
         }
-        sessionManage.handleTextMeg(addr, content, sendId, addrType, contentType);
+        if (true == isture) {
+            //初次建立会场后 更新用户状态 ，更新代抢列表
+            OnlineUserNew onlineUserNew = sessionManage.clients.get(memberId);
+            if (null == onlineUserNew) {
+                onlineUserNew.setState(SysConstant.STATUS_TOW);
+            }
+            sessionManage.rodList();
+            return;
+        }
+        //判断是否是初次进入 初次进入小会场
+        creatMeetActor(meetingId, memberId, memberType, waiterId, waiterType);
+        ;
+        sessionManage.handleTextMeg(addr, content, sendId, addrType, contentType, jsonObject);
         System.out.println("接收数据：" + message.getPayload().toString());
         // 处理消息 msgContent消息内容
     }
 
+    /**
+     * 未读消息列表
+     *
+     * @param meetingId
+     * @param memberId
+     * @param waiterId
+     * @param jsonObject
+     * @param content
+     * @param session
+     * @throws IOException
+     */
+    public boolean unList(String meetingId, Long memberId, Long waiterId, JSONObject jsonObject, String content, WebSocketSession session) throws IOException {
+        if (null == waiterId && null == meetingId) {
+            JSONObject jsonObject1 = new JSONObject();
+            jsonObject1.put("content", content);
+            jsonObject1.put("addrTime", new Date()); //未读 接受时间
+            if (null != unreadList.get(memberId)) {
+                unreadList.get(String.valueOf(memberId)).add(jsonObject);
+            } else {
+                List<JSONObject> jsonObjects = new ArrayList<>();
+                jsonObjects.add(jsonObject);
+                unreadList.put(String.valueOf(memberId), jsonObjects);
+            }
+            session.sendMessage(new TextMessage(sessionManage.getObj(SysConstant.FIVE, this.unreadList)));
+            // return;
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * 是否初次进入小会场
+     *2 @param meetingId  下会场id
+     * @param memberId
+     * @param memberType
+     * @param waiterId
+     * @param waiterType
+     * @return
+     */
+    public boolean creatMeetActor(String meetingId, Long memberId, String memberType, Long waiterId, String waiterType) {
+        //查询子表是否有记录
+        List<MeetingActorEntity> byIdAndActor = meetingActorDao.selectList(new QueryWrapper<>(new MeetingActorEntity(meetingId, SysConstant.ZERO)));
+        //未建立会场
+        if (byIdAndActor.size() == 0) {
+            MeetingActorEntity meetingActorEntity = new MeetingActorEntity(null, memberId, memberType,
+                    null, meetingId, null,
+                    new Date(), null,
+                    SysConstant.ZERO, null);
+            rabbitTemplate.convertAndSend(RabbitMqConfig.EXCHANGE_NAME, RabbitMqConfig.KEY2, GeneralUtils.objectToString("insert", meetingActorEntity));
+            MeetingActorEntity meetingActorEntity1 = new MeetingActorEntity(null, waiterId, waiterType,
+                    null, meetingId, null,
+                    new Date(), null,
+                    SysConstant.ZERO, null);
+            rabbitTemplate.convertAndSend(RabbitMqConfig.EXCHANGE_NAME, RabbitMqConfig.KEY2, GeneralUtils.objectToString("insert", meetingActorEntity1));
+            return true;
+        }
+        return false;
+    }
 
     @Override
     public void handleTransportError(WebSocketSession session, Throwable exception) throws Exception {
@@ -185,13 +227,10 @@ public class MyWebSocketHandler extends TextWebSocketHandler {
         Long userid = new Long((String) attributes.get("userid"));
         String bigId = (String) attributes.get("bigId");
         String meetingId = (String) attributes.get("meetingId");
-        OnlineUserNew onlineUserNew = sessionManage.get(userid);
-        sessionManage.remove(userid, bigId, meetingId);
+        sessionManage.remove(userid, bigId, meetingId, talkerType);
         if (session.isOpen()) {
-            //  meetingPlazaDao.update()
             session.close();
         }
-        //
     }
 
     // 处理二进制消息

@@ -5,27 +5,49 @@ import com.dz.dzim.exception.ErrorCodeException;
 import com.dz.dzim.pojo.vo.ResponseVO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.WebDataBinder;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
- * 异常处理
+ * service 异常处理
  *
- * @author yanpanyi
+ * @author baohan
  */
 @RestControllerAdvice
 public class ExceptionHandle {
     private Logger log = LoggerFactory.getLogger(this.getClass());
 
+    /**
+     * 全局异常捕捉处理
+     * @param ex
+     * @return
+     */
+    @ResponseBody
     @ExceptionHandler(value = Exception.class)
-    public ResponseVO exceptionHandler(Exception e) {
-        log.error("error:", e);
-        return new ResponseVO(CodeEnum.INTERNAL_SERVER_ERROR);
+    public Map errorHandler(Exception ex) {
+        Map map = new HashMap();
+        map.put("code", 500);
+        map.put("msg", ex.getMessage());
+        return map;
     }
 
+    /**
+     * 拦截捕捉自定义异常 MyException.class
+     * @param ex
+     * @return
+     */
+    @ResponseBody
     @ExceptionHandler(value = ErrorCodeException.class)
-    public ResponseVO errorCodeHandler(ErrorCodeException e) {
-        return new ResponseVO(e.getCode());
+    public Map myErrorHandler(ErrorCodeException ex) {
+        Map map = new HashMap();
+        map.put("code", ex.getCode());
+        map.put("msg", ex.getMsg());
+        return map;
     }
+
 
 }

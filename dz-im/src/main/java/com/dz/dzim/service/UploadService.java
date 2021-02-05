@@ -1,7 +1,12 @@
 package com.dz.dzim.service;
 
+import com.alibaba.fastjson.JSONObject;
+import com.dz.dzim.common.GeneralUtils;
+import com.dz.dzim.common.SysConstant;
+import com.dz.dzim.config.rabbitmq.RabbitMqConfig;
 import com.dz.dzim.mapper.ChatRecordMapper;
 
+import com.dz.dzim.pojo.doman.MeetingChattingEntity;
 import com.dz.dzim.utils.UUIDUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.amqp.core.*;
@@ -15,6 +20,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import java.io.File;
 import java.io.IOException;
+import java.util.jar.JarEntry;
 
 /**
  * @author xxxyyy
@@ -35,12 +41,41 @@ public class UploadService {
     private String imgDir;
 
 
-    public String uploadImage(MultipartFile multipartFile, HttpServletRequest request) throws Exception {
+    public MeetingChattingEntity uploadImage(MultipartFile multipartFile, HttpServletRequest request, JSONObject jsonObject) throws Exception {
 
         if (multipartFile.isEmpty()) {
             throw new Exception("multipartFile为空！");
         }
-        return execute(multipartFile,request);
+       // String meetingId = jsonObject.getString("meetingId");//小会场id
+        Integer contentType = jsonObject.getInteger("contentType");//谁发给谁
+        Long memberId = jsonObject.getJSONObject("user").getLong("memberId");
+       // String memberType = jsonObject.getJSONObject("user").getString("memberType");
+        Long waiterId = jsonObject.getJSONObject("kf").getLong("waiterId");
+        String talkerType =null;
+        Long talker = new Long(0);
+        Long addrId = new Long(0);
+        if(SysConstant.EIGHT == contentType){
+             talker = memberId;
+             addrId = waiterId;
+            talkerType ="member";
+        } else {
+             talker = waiterId;
+             addrId = memberId;
+            talkerType ="waiter";
+
+        }
+
+
+        String url = execute(multipartFile, request);
+        MeetingChattingEntity meetingChattingEntity = new MeetingChattingEntity(
+                null, talker, talkerType, null,
+                contentType, System.currentTimeMillis(),
+                null, url, addrId, null, null
+        );
+       // rabbitTemplate.convertAndSend("imageExchange","img.#",url);
+        rabbitTemplate.convertAndSend(RabbitMqConfig.EXCHANGE_NAME,RabbitMqConfig.KEY1, GeneralUtils.objectToString("insert", meetingChattingEntity));
+
+        return meetingChattingEntity;
     }
 
     private String execute(MultipartFile multipartFile, HttpServletRequest request) throws Exception {
@@ -71,7 +106,6 @@ public class UploadService {
         String distPath = imgDir+fileName;
 
         //将url路径作为消息发送到MQ
-        rabbitTemplate.convertAndSend("imageExchange","img.#",url);
 
         File file = new File(distPath);
         if (null==file){
@@ -87,10 +121,8 @@ public class UploadService {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-        /*返回文件真实路径*/
+        /*返回浏览器访问路径*/
         return url;
-
     }
 
 }

@@ -9,6 +9,8 @@ import com.dz.dzim.common.GeneralUtils;
 import com.dz.dzim.common.Result;
 import com.dz.dzim.common.SysConstant;
 import com.dz.dzim.common.enums.CodeEnum;
+import com.dz.dzim.config.rabbitmq.RabbitMqConfig;
+import com.dz.dzim.exception.handler.ExceptionHandle;
 import com.dz.dzim.mapper.ChatRecordMapper;
 import com.dz.dzim.mapper.MeetingChattingDao;
 import com.dz.dzim.mapper.MeetingDao;
@@ -17,18 +19,23 @@ import com.dz.dzim.pojo.doman.MeetingChattingEntity;
 import com.dz.dzim.pojo.doman.MeetingEntity;
 import com.dz.dzim.pojo.doman.MeetingPlazaEntity;
 import com.dz.dzim.pojo.doman.MsgRecordsEntity;
+import com.dz.dzim.pojo.vo.QueryParams;
 import com.dz.dzim.pojo.vo.ResponseVO;
+import com.dz.dzim.service.UploadService;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.Date;
 import java.util.List;
 
 @RestController
-public class ChatController {
+public class ChatController extends ExceptionHandle {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ChatController.class);
 
@@ -41,13 +48,14 @@ public class ChatController {
     private MeetingPlazaDao meetingPlazaDao;
 
     @Autowired
-    private MeetingDao meetingDao;
-
-    @Autowired
     RabbitTemplate rabbitTemplate;
 
-
+    @Autowired
     private MeetingChattingDao meetingChattingDao;
+
+    @Autowired
+    private UploadService uploadService;
+
 
     /**
      * @param username 查询条件
@@ -67,52 +75,34 @@ public class ChatController {
      */
     @PostMapping("/creatBigSession")
     public ResponseVO creatBigSession(@RequestBody JSONObject jsonObject) {
-        Long userId = (Long) jsonObject.getLong("userId");
+        Long userId = jsonObject.getLong("userId");
         String talkerType = (String) jsonObject.get("talkerType");
-        String id = GeneralUtils.randomUUID(SysConstant.ELEVEN);
+        String id;
+        String nextIdNew = GeneralUtils.randomUUID(SysConstant.ELEVEN);
+        String prevIdNew = null;
         List<MeetingPlazaEntity> queryEntity = meetingPlazaDao.selectList(new QueryWrapper<>(
                 new MeetingPlazaEntity(userId, talkerType))
                 .orderByDesc("enter_time"));
 
         if (SysConstant.ZERO == queryEntity.size()) {
+            id = GeneralUtils.randomUUID(SysConstant.ELEVEN);
 
-            MeetingPlazaEntity meetingPlazaEntity = new MeetingPlazaEntity(id, userId, talkerType,
-                    null, new Date(), null, SysConstant.ONE,
-                    null, GeneralUtils.randomUUID(SysConstant.ELEVEN));
-
-//             rabbitTemplate.convertSendAndReceive("imageExchange", "img.#", JSON.toJSONString(meetingPlazaEntity));
-
-            int insert = meetingPlazaDao.insert(new MeetingPlazaEntity(id, userId, talkerType,
-                    null, new Date(), null, SysConstant.ONE,
-                    null, GeneralUtils.randomUUID(SysConstant.ELEVEN)));
-            if (1 != insert) {
-                return new ResponseVO(CodeEnum.CREATION);
-            }
         } else {
-
-            MeetingPlazaEntity meetingPlazaEntity = new MeetingPlazaEntity(queryEntity.get(SysConstant.ZERO).getNextId(), userId, talkerType,
-                    null, new Date(), null, SysConstant.ONE,
-                    queryEntity.get(SysConstant.ZERO).getId(), GeneralUtils.randomUUID(SysConstant.ELEVEN));
-
-//            rabbitTemplate.convertSendAndReceive("imageExchange", "img.#", JSON.toJSONString(meetingPlazaEntity));
-
-            meetingPlazaDao.insert(new MeetingPlazaEntity(queryEntity.get(SysConstant.ZERO).getNextId(), userId, talkerType,
-                    null, new Date(), null, SysConstant.ONE,
-                    queryEntity.get(SysConstant.ZERO).getId(), GeneralUtils.randomUUID(SysConstant.ELEVEN)));
-            meetingPlazaDao.insert(new MeetingPlazaEntity(
-                    queryEntity.get(SysConstant.ZERO).getNextId(),
-                    userId,
-                    talkerType,
-                    null,
-                    new Date(),
-                    null,
-                    SysConstant.ONE,
-                    queryEntity.get(SysConstant.ZERO).getId(),
-                    GeneralUtils.randomUUID(SysConstant.ELEVEN)));
+            id = queryEntity.get(SysConstant.ZERO).getNextId();
+            prevIdNew = queryEntity.get(SysConstant.ZERO).getId();
         }
+        MeetingPlazaEntity entity = new MeetingPlazaEntity(id,
+                userId,
+                talkerType,
+                null,
+                new Date(),
+                null,
+                SysConstant.ONE,
+                prevIdNew,
+                nextIdNew);
+        rabbitTemplate.convertAndSend(RabbitMqConfig.EXCHANGE_NAME, RabbitMqConfig.KEY3, GeneralUtils.objectToString("insert", entity));
         return new ResponseVO(id);
     }
-
 
 
     /**
@@ -120,15 +110,10 @@ public class ChatController {
      */
     @PostMapping("/creatSmallSession")
     public ResponseVO creatSmallSession() {
-
         String id = GeneralUtils.randomUUID(SysConstant.SEX);
         MeetingEntity meetingEntity = new MeetingEntity(id, new Date(), SysConstant.ZERO, new Date());
-
-        if (1 == meetingDao.insert(new MeetingEntity(id, new Date(), SysConstant.ZERO, new Date()))) {
-            return new ResponseVO(id);
-        } else {
-            return new ResponseVO(CodeEnum.CREATION);
-        }
+        rabbitTemplate.convertAndSend(RabbitMqConfig.EXCHANGE_NAME, RabbitMqConfig.KEY4, GeneralUtils.objectToString("insert", meetingEntity));
+        return new ResponseVO(id);
     }
 
 
@@ -136,20 +121,37 @@ public class ChatController {
      * 分页查询聊天记录
      */
     @PostMapping("/queryChat")
-    public ResponseVO queryChat(Long talker, Integer pageNum, Integer pageSize) {
-        pageNum = null == pageNum ? 0 : pageNum;
-        pageSize = null == pageSize ? 0 : pageSize;
-        Page<MeetingChattingEntity> page = new Page<>(pageNum, pageSize);
+    public ResponseVO queryChat(@RequestBody QueryParams params) {
+        Long startTime = params.getStartTime();
+        Long endTime = params.getEndTime();
+        if (null == endTime || SysConstant.ZERO == endTime) {
+            endTime = System.currentTimeMillis();
+        }
+
+        Page<MeetingChattingEntity> page = QueryParams.getPage(params);
+        Long talker = params.getTalker();
         //如果是用户
         QueryWrapper<MeetingChattingEntity> queryWrapper = new QueryWrapper();
         //条件查询
         queryWrapper.eq("talker", talker).or().eq("addr_id", talker).orderByDesc("server_time");
-
+        if (null != startTime && SysConstant.ZERO != startTime) {
+            Long finalEndTime = endTime;
+            queryWrapper.and(wrapper -> wrapper.ge("server_time", startTime).le("server_time", finalEndTime)) ;
+        }
         Page<MeetingChattingEntity> meetingChattingEntityPage = meetingChattingDao.selectPage(page, queryWrapper);
-
-        //  queryWrapper.or().
-
         return new ResponseVO(meetingChattingEntityPage);
+    }
+
+
+    @PostMapping(value = "/upload/img")
+    public ResponseVO uploadImage(@RequestParam("file") MultipartFile file, HttpServletRequest request, @RequestParam("body") String body) throws Exception {
+        JSONObject jsonObject = JSONObject.parseObject(body);
+        MeetingChattingEntity imgsrc = uploadService.uploadImage(file, request, jsonObject);
+
+        if (StringUtils.isNotBlank(imgsrc.getContent())) {
+            return new ResponseVO(imgsrc);
+        }
+        return new ResponseVO("上传失败！");
     }
 
 

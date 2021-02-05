@@ -3,25 +3,17 @@ package com.dz.dzim.config.rabbitmq;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.*;
-import org.springframework.amqp.rabbit.batch.BatchingStrategy;
-import org.springframework.amqp.rabbit.batch.SimpleBatchingStrategy;
-import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
-import org.springframework.amqp.rabbit.core.BatchingRabbitTemplate;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
-import org.springframework.amqp.support.converter.MessageConverter;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.Ordered;
-import org.springframework.scheduling.TaskScheduler;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
 import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
+import java.util.HashMap;
+import java.util.Map;
+
 
 /**
  * @author
@@ -29,35 +21,111 @@ import javax.annotation.Resource;
 
 
 @Configuration
-public class RabbitMqConfig  {
+public class RabbitMqConfig {
 
 
-    Logger logger= LoggerFactory.getLogger(RabbitMqConfig.class);
+    Logger logger = LoggerFactory.getLogger(RabbitMqConfig.class);
 
     //定义交换机的名字
-    public static final String  EXCHANGE_NAME = "imageExchange";
+    public static final String EXCHANGE_NAME = "im-exchange";
     //定义队列的名字
-    public static final String QUEUE_NAME = "imageQueue";
+    public static final String QUEUE_NAME = "queue";
+    public static final String QUEUE_NAME1 = "meeting_chatting";
+    public static final String QUEUE_NAME2 = "meeting_actor";
+    public static final String QUEUE_NAME3 = "meeting_plaza";
+    public static final String QUEUE_NAME4 = "meeting";
+    //路由key
+    public static final String KEY1="msg1";
+    public static final String KEY2="msg2";
+    public static final String KEY3="msg3";
+    public static final String KEY4="msg4";
 
-    //1、声明交换机
+    private static String dlxExchangeName ="dlx-exch";
+    private static String dlxQueueName ="dlx-que";
+    private static String dlxRoutingKey ="dlx-key";
+
+    private static Map<String,Object> dlxMap;
+
+
+//    /* 死信交换机*/
+//    @Bean
+//    public Exchange dlxExchange(){
+//        return ExchangeBuilder.topicExchange(dlxExchangeName).durable(true).build();
+//    }
+//
+//    /*死信队列*/
+//    @Bean
+//    public Queue dlxQueue(){
+//        return QueueBuilder.durable(dlxQueueName).build();
+//    }
+//
+//    @Bean
+//    public BindingBuilder.GenericArgumentsConfigurer dlcBinding(@Qualifier("dlxQueue") Queue queue, @Qualifier("dlxExchange") Exchange exchange) {
+//        return BindingBuilder.bind(queue)
+//                .to(exchange)
+//                .with(KEY1);
+//    }
+
+    //声明交换机
     @Bean("bootExchange")
-    public Exchange bootExchange(){
-
+    public Exchange bootExchange() {
         return ExchangeBuilder.topicExchange(EXCHANGE_NAME).durable(true).build();
     }
 
-    //2、声明队列
-    @Bean("bootQueue")
-    public Queue bootQueue(){
 
-        return QueueBuilder.durable(QUEUE_NAME).build();
+    @Bean("bootQueue1")
+    public Queue bootQueue1() {
+
+        return QueueBuilder.durable(QUEUE_NAME1).build();
     }
 
-    //3、队列与交换机进行绑定
+    @Bean("bootQueue2")
+    public Queue bootQueue2() {
+        return QueueBuilder.durable(QUEUE_NAME2).build();
+    }
+
+    @Bean("bootQueue3")
+    public Queue bootQueue3() {
+        return QueueBuilder.durable(QUEUE_NAME3).build();
+    }
+
+    @Bean("bootQueue4")
+    public Queue bootQueue4() {
+        return QueueBuilder.durable(QUEUE_NAME4).build();
+    }
+
     @Bean
-    public Binding bindQueueExchange(@Qualifier("bootQueue") Queue queue, @Qualifier("bootExchange") Exchange exchange){
-        return BindingBuilder.bind(queue).to(exchange).with("img.#").noargs();
+    public BindingBuilder.GenericArgumentsConfigurer bindQueueExchange1(@Qualifier("bootQueue1") Queue queue, @Qualifier("bootExchange") Exchange exchange) {
+        return BindingBuilder.bind(queue)
+                .to(exchange)
+                .with(KEY1);
+
     }
+
+    @Bean
+    public BindingBuilder.GenericArgumentsConfigurer bindQueueExchange2(@Qualifier("bootQueue2") Queue queue, @Qualifier("bootExchange") Exchange exchange) {
+        return BindingBuilder.bind(queue)
+                .to(exchange)
+                .with(KEY2);
+
+    }
+
+    @Bean
+    public BindingBuilder.GenericArgumentsConfigurer bindQueueExchange3(@Qualifier("bootQueue3") Queue queue, @Qualifier("bootExchange") Exchange exchange) {
+        return BindingBuilder.bind(queue)
+                .to(exchange)
+                .with(KEY3);
+
+    }
+
+    @Bean
+    public BindingBuilder.GenericArgumentsConfigurer bindQueueExchange4(@Qualifier("bootQueue4") Queue queue, @Qualifier("bootExchange") Exchange exchange) {
+        return BindingBuilder.bind(queue)
+                .to(exchange)
+                .with(KEY4);
+
+    }
+
 
     /**
      * 设置返回回调和确认回调
@@ -66,62 +134,55 @@ public class RabbitMqConfig  {
      * @return
      */
     @Bean
-    RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory,RabbitMQConfirmAndReturn rabbitMQConfirmAndReturn) {
+    RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory) {
+
         RabbitTemplate rabbitTemplate = new RabbitTemplate();
+
         rabbitTemplate.setConnectionFactory(connectionFactory);
-        rabbitTemplate.setConfirmCallback(rabbitMQConfirmAndReturn);
-        rabbitTemplate.setReturnCallback(rabbitMQConfirmAndReturn);
+
+        rabbitTemplate.setConfirmCallback(new RabbitTemplate.ConfirmCallback() {
+            @Override
+            public void confirm(CorrelationData correlationData, boolean ack, String cause) {
+                //ack 为  true表示 消息已经到达交换机
+                if (ack) {
+                    //接收成功
+                    logger.info("交换机接收消息成功:" + cause);
+                } else {
+                    //接收失败
+                    // 根据本地消息的状态为失败，可以用定时任务去处理数据
+                    logger.info("交换机接收失败消息====>:" + cause);
+                }
+            }
+        });
+
+        rabbitTemplate.setReturnCallback(new RabbitTemplate.ReturnCallback() {
+            /**
+             *
+             * @param message   消息对象
+             * @param replyCode 错误码
+             * @param replyText 错误信息
+             * @param exchange  交换机
+             * @param routingKey 路由键
+             */
+            @Override
+            public void returnedMessage(Message message, int replyCode, String replyText, String exchange, String routingKey) {
+                String msgId = message.getMessageProperties().getCorrelationId();
+                String data = new String(message.getBody());
+                logger.error("消息发送失败-消息回退，应答码：{}，原因：{}，交换机：{}，路由键：{}", replyCode, replyText, exchange, routingKey);
+                logger.error("msgId==>"+msgId);
+                logger.error("data==>"+data);
+
+
+                //进行消息重新发送
+//                rabbitTemplate.convertAndSend(exchange, routingKey, message);
+            }
+        });
+
         //Mandatory为true时,消息通过交换器无法匹配到队列会返回给生产者，为false时匹配不到会直接被丢弃
         rabbitTemplate.setMandatory(true);
+
         return rabbitTemplate;
     }
-
-//    @PostConstruct
-//    public void initRabbitTemplate(){
-//
-//        //定义确认机制回调方法
-//        rabbitTemplate.setConfirmCallback(new RabbitTemplate.ConfirmCallback() {
-//            /**
-//             *
-//             * @param correlationData 相关配置信息
-//             * @param ack   exchange交换机 是否成功收到了消息。true 成功，false代表失败
-//             * @param cause 失败原因
-//             */
-//            @Override
-//            public void confirm(CorrelationData correlationData, boolean ack, String cause) {
-//                //ack 为  true表示 消息已经到达交换机
-//                if (ack) {
-//                    //接收成功
-//                    logger.info("交换机接收消息成功:" + cause);
-//                } else {
-//                    //接收失败
-//                    logger.info("交换机接收失败消息:" + cause);
-//                }
-//            }
-//        });
-//
-//        //设置交换机处理失败消息的模式  为true的时候，消息达到不了队列时，会将消息重新返回给生产者
-//        rabbitTemplate.setMandatory(true);
-//
-//        //定义返回机制回调
-//        rabbitTemplate.setReturnCallback(new RabbitTemplate.ReturnCallback() {
-//            /**
-//             *
-//             * @param message   消息对象
-//             * @param replyCode 错误码
-//             * @param replyText 错误信息
-//             * @param exchange  交换机
-//             * @param routingKey 路由键
-//             */
-//            @Override
-//            public void returnedMessage(Message message, int replyCode, String replyText, String exchange, String routingKey) {
-//
-//                logger.info("交换机转发消息到指定队列失败！！！");
-//                //进行消息重新发送
-//                rabbitTemplate.convertAndSend(exchange,routingKey,message);
-//            }
-//        });
-//    }
 
 
 }

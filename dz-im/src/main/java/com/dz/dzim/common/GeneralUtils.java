@@ -58,4 +58,12 @@ public class GeneralUtils {
         return new JSONArray(list).toString();
     }
 
+    public static String objectToString(String type,Object obj){
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("type",type);
+        jsonObject.put("obj",obj);
+
+        return jsonObject.toJSONString();
+    }
+
 }

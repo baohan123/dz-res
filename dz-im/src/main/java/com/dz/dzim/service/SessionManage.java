@@ -5,7 +5,9 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
+import com.dz.dzim.common.GeneralUtils;
 import com.dz.dzim.common.SysConstant;
+import com.dz.dzim.config.rabbitmq.RabbitMqConfig;
 import com.dz.dzim.mapper.MeetingActorDao;
 import com.dz.dzim.mapper.MeetingChattingDao;
 import com.dz.dzim.mapper.MeetingDao;
@@ -27,6 +29,7 @@ import org.springframework.web.socket.WebSocketSession;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * @author baohan
@@ -80,10 +83,10 @@ public class SessionManage {
      * @param userid
      * @param bigId
      */
-    //@Transactional(rollbackFor = {Exception.class, RuntimeException.class})
     public void adds(WebSocketSession session, String talkerType, Long userid, String bigId) {
-        clients.put(userid, new OnlineUserNew(bigId, userid, talkerType, session, null, new Date(),
-                null, SysConstant.STATUS_ONE, null, null));
+        OnlineUserNew onlineUserNew = new OnlineUserNew(bigId, userid, talkerType, session, null, new Date(),
+                null, SysConstant.STATUS_ONE, null, null);
+        clients.put(userid, onlineUserNew);
         String sysMsg = "用户:" + userid + "  类型：" + talkerType + "==加入大会场上线了啦";
         JSONObject desc = new JSONObject();
         desc.put("desc", sysMsg);
@@ -91,8 +94,18 @@ public class SessionManage {
                 getObj(SysConstant.TWO, desc));
         List<WebSocketExtension> extensions = session.getExtensions();
         sendMessage("all", textMessage, null);
+        //更新代抢列表
+        rodList();
 
+    }
+
+    /**
+     * 代抢列表
+     */
+    public void rodList() {
+        //代抢用户
         JSONArray array = new JSONArray();
+        //在线客服
         List<WebSocketSession> list = new ArrayList<>();
         for (Map.Entry<Long, OnlineUserNew> entry : getAll().entrySet()) {
             JSONObject jsonObject = new JSONObject();
@@ -128,6 +141,7 @@ public class SessionManage {
         return this.clients.get(key);
     }
 
+
     /**
      * 获取大会场
      */
@@ -140,8 +154,11 @@ public class SessionManage {
      *
      * @param key 并返回更新后的clent
      */
-    public OnlineUserNew remove(Long key, String bigId, String meetingId) {
+    public OnlineUserNew remove(Long key, String bigId, String meetingId,String talkerType) {
+
         OnlineUserNew remove = clients.remove(key);
+        //如果用户下线 更新代抢列表
+        if("member".equals(talkerType)){rodList();}
         meetingPlazaDao.updateById(new MeetingPlazaEntity(bigId, SysConstant.STATUS_FOUR, new Date()));
         if (null != meetingId) {
             meetingDao.updateById(new MeetingEntity(meetingId, new Date(), SysConstant.STATUS_THREE, SysConstant.STATUS_TOW));
@@ -190,27 +207,30 @@ public class SessionManage {
         return JSONObject.toJSONString(object);
     }
 
-    public void handleTextMeg(Long addr, String content, Long sendId, String addrType, Integer contentType) {
+    public void handleTextMeg(Long addr, String content, Long sendId, String addrType,
+                              Integer contentType, JSONObject jsonObject) {
         try {
-            get(addr).getSession().sendMessage(new TextMessage(content));
+            TextMessage textMessage = new TextMessage(getObj(SysConstant.STATUS_FOUR, jsonObject));
+            get(addr).getSession().sendMessage(textMessage);
 
             MeetingChattingEntity meetingChattingEntity = new MeetingChattingEntity(
                     null, sendId, addrType, null,
                     contentType, System.currentTimeMillis(),
-                    null, content, null, null, null
-            );
-            rabbitTemplate.convertAndSend("imageExchange","img.#", JSON.toJSONString(meetingChattingEntity));
-
-            get(addr).getSession().sendMessage(new TextMessage(getObj(SysConstant.STATUS_FOUR, content)));
-
-            MeetingChattingEntity meetingChattingEntity1 = new MeetingChattingEntity(
-                    null, sendId, addrType, null,
-                    contentType, System.currentTimeMillis(),
                     null, content, addr, addrType, null
             );
+            rabbitTemplate.convertAndSend(RabbitMqConfig.EXCHANGE_NAME, RabbitMqConfig.KEY1, GeneralUtils.objectToString("insert", meetingChattingEntity));
 
-            rabbitTemplate.convertAndSend("imageExchange","img.#", JSON.toJSONString(meetingChattingEntity1));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
+    }
+
+    //系统消息
+    public void sendMessageSys(Integer sendType, Object msg, Long addrId) {
+        TextMessage textMessage = new TextMessage(getObj(sendType, msg));
+        try {
+            clients.get(addrId).getSession().sendMessage(textMessage);
         } catch (IOException e) {
             e.printStackTrace();
         }

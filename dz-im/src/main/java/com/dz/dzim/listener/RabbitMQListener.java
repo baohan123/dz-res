@@ -1,14 +1,10 @@
 package com.dz.dzim.listener;
 
 import com.alibaba.fastjson.JSON;
-import com.dz.dzim.mapper.ChatRecordMapper;
-import com.dz.dzim.mapper.MeetingActorDao;
-import com.dz.dzim.mapper.MeetingChattingDao;
-import com.dz.dzim.mapper.MeetingPlazaDao;
-import com.dz.dzim.pojo.doman.MeetingActorEntity;
-import com.dz.dzim.pojo.doman.MeetingChattingEntity;
-import com.dz.dzim.pojo.doman.MeetingPlazaEntity;
-import com.dz.dzim.pojo.doman.MsgRecordsEntity;
+import com.alibaba.fastjson.JSONObject;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
+import com.dz.dzim.mapper.*;
+import com.dz.dzim.pojo.doman.*;
 import com.dz.dzim.utils.ObjectUtis;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.DefaultConsumer;
@@ -28,6 +24,7 @@ import org.springframework.stereotype.Component;
 import com.rabbitmq.client.Channel;
 
 import javax.annotation.Resource;
+import java.io.IOException;
 
 
 /**
@@ -48,48 +45,137 @@ public class RabbitMQListener  /*implements BatchMessageListener */{
     @Autowired
     MeetingPlazaDao meetingPlazaDao;
 
+    @Autowired
+    MeetingDao meetingDao;
+
+
+
 
 
     //定义方法进行信息的监听   RabbitListener中的参数用于表示监听的是哪一个队列
-    @RabbitListener(queues = "imageQueue")
-    public void onMessage(@Payload String msg, @Header(AmqpHeaders.DELIVERY_TAG) long deliveryTag, Channel channel) throws Exception {
+    @RabbitListener(queues = "meeting_chatting")
+    public void onMessage(@Payload String msg, @Header(AmqpHeaders.DELIVERY_TAG) long deliveryTag, Channel channel) throws IOException{
 
-        try {
-            if (StringUtils.isNotBlank(msg)){
+        if (StringUtils.isNotBlank(msg)){
+            JSONObject jsonObject = JSONObject.parseObject(msg);
 
-                MeetingChattingEntity meetingChattingEntity = JSON.parseObject(msg, MeetingChattingEntity.class);
+            String type = (String) jsonObject.getString("type");
 
-                MeetingActorEntity meetingActorEntity = JSON.parseObject(msg, MeetingActorEntity.class);
+            String obj = jsonObject.getString("obj");
 
-                MeetingPlazaEntity meetingPlazaEntity = JSON.parseObject(msg, MeetingPlazaEntity.class);
+
+            MeetingChattingEntity meetingChattingEntity = JSON.parseObject(obj, MeetingChattingEntity.class);
+
+            if (StringUtils.equals("insert",type)){
 
                 if (!ObjectUtis.isAllFieldNull(meetingChattingEntity)){
-                    meetingChattingDao.insert((MeetingChattingEntity) meetingChattingEntity);
+                    meetingChattingDao.insert( meetingChattingEntity);
                 }
-                if (!ObjectUtis.isAllFieldNull(meetingActorEntity)){
-                    meetingActorDao.insert((MeetingActorEntity) meetingActorEntity);
-                }
-                if (!ObjectUtis.isAllFieldNull(meetingPlazaEntity)){
+            }
+            if (StringUtils.equals("update",type)){
 
-                    int insert = meetingPlazaDao.insert(meetingPlazaEntity);
+                if (!ObjectUtis.isAllFieldNull(meetingChattingEntity)){
+                    meetingChattingDao.updateById(meetingChattingEntity);
                 }
+            }
+        }
 
+        System.out.println("消息{}消费成功:"+msg);
+
+    }
+
+    //定义方法进行信息的监听   RabbitListener中的参数用于表示监听的是哪一个队列
+    @RabbitListener(queues = "meeting_actor")
+    public void onMessages(@Payload String msg, @Header(AmqpHeaders.DELIVERY_TAG) long deliveryTag, Channel channel) throws IOException {
+
+
+            if (StringUtils.isNotBlank(msg)){
+
+                JSONObject jsonObject = JSONObject.parseObject(msg);
+
+                String type = (String) jsonObject.getString("type");
+
+                String obj = jsonObject.getString("obj");
+
+                MeetingActorEntity meetingActorEntity =  JSON.parseObject(obj, MeetingActorEntity.class);
+                UpdateWrapper<MeetingActorEntity> updateWrapper = JSON.parseObject(obj, UpdateWrapper.class);
+
+                if (StringUtils.equals("insert",type)){
+
+                    if (!ObjectUtis.isAllFieldNull(meetingActorEntity)){
+                        meetingActorDao.insert(meetingActorEntity);
+                    }
+
+                    if (StringUtils.equals("update",type)){
+
+                        if (!ObjectUtis.isAllFieldNull(meetingActorEntity)){
+                            meetingActorDao.updateById(meetingActorEntity);
+                        }
+                        if (!ObjectUtis.isAllFieldNull(updateWrapper)){
+                            meetingActorDao.update(null,updateWrapper);
+                        }
+                    }
+                }
             }
 
-            //进行消息签收
-            channel.basicAck(deliveryTag, true);
-
-        } catch (Exception e) {
-             /*
-             拒绝签收
-            第三个参数：requeue：重回队列。如果设置为true，则消息重新回到queue，broker会重新发送该消息给消费端
-             */
-            channel.basicNack(deliveryTag, true, true);
-
-        }
     }
 
 
+    //定义方法进行信息的监听   RabbitListener中的参数用于表示监听的是哪一个队列
+    @RabbitListener(queues = "meeting_plaza")
+    public void onMessage3(@Payload String msg, @Header(AmqpHeaders.DELIVERY_TAG) long deliveryTag, Channel channel) throws IOException {
+
+            if (StringUtils.isNotBlank(msg)){
+
+                JSONObject jsonObject = JSONObject.parseObject(msg);
+
+                String type = (String) jsonObject.getString("type");
+
+                String obj = jsonObject.getString("obj");
+
+                MeetingPlazaEntity meetingPlazaEntity = JSON.parseObject(obj,MeetingPlazaEntity.class);
+
+                if (StringUtils.equals("insert",type)){
+                    if (!ObjectUtis.isAllFieldNull(meetingPlazaEntity)){
+                        meetingPlazaDao.insert(meetingPlazaEntity);
+                    }
+                }
+                if (StringUtils.equals("update",type)){
+                    if (!ObjectUtis.isAllFieldNull(meetingPlazaEntity)){
+                        meetingPlazaDao.updateById(meetingPlazaEntity);
+                    }
+                }
+            }
+    }
+
+
+    //定义方法进行信息的监听   RabbitListener中的参数用于表示监听的是哪一个队列
+    @RabbitListener(queues = "meeting")
+    public void onMessage4(@Payload String msg, @Header(AmqpHeaders.DELIVERY_TAG) long deliveryTag, Channel channel) throws IOException {
+
+            if (StringUtils.isNotBlank(msg)){
+
+                JSONObject jsonObject = JSONObject.parseObject(msg);
+
+                String type = (String) jsonObject.getString("type");
+
+                String obj = jsonObject.getString("obj");
+
+                MeetingEntity meetingEntity = JSON.parseObject(obj,MeetingEntity.class);
+
+                if (StringUtils.equals("insert",type)){
+                    if (!ObjectUtis.isAllFieldNull(meetingEntity)){
+                        meetingDao.insert(meetingEntity);
+                    }
+                }
+
+                if (StringUtils.equals("update",type)){
+                    if (!ObjectUtis.isAllFieldNull(meetingEntity)){
+                        meetingDao.updateById(meetingEntity);
+                    }
+                }
+            }
+    }
 
 
 
