@@ -73,7 +73,7 @@ public class UploadService {
                 null, url, addrId, null, null
         );
        // rabbitTemplate.convertAndSend("imageExchange","img.#",url);
-        rabbitTemplate.convertAndSend(RabbitMqConfig.EXCHANGE_NAME,RabbitMqConfig.KEY1, GeneralUtils.objectToString("insert", meetingChattingEntity));
+      //  rabbitTemplate.convertAndSend(RabbitMqConfig.EXCHANGE_NAME,RabbitMqConfig.KEY1, GeneralUtils.objectToString("insert", meetingChattingEntity));
 
         return meetingChattingEntity;
     }

@@ -210,6 +210,7 @@ public class SessionManage {
     public void handleTextMeg(Long addr, String content, Long sendId, String addrType,
                               Integer contentType, JSONObject jsonObject) {
         try {
+
             TextMessage textMessage = new TextMessage(getObj(SysConstant.STATUS_FOUR, jsonObject));
             get(addr).getSession().sendMessage(textMessage);
 

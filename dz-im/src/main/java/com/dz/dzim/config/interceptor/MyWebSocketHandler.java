@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.*;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
+import org.thymeleaf.util.StringUtils;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -125,12 +126,12 @@ public class MyWebSocketHandler extends TextWebSocketHandler {
                 addr = memberId;
                 sendId = new Long(000);
                 addrType = "system";
-
                 break;
+
             //系统发送至客服
             case 11:
                 addr = waiterId;
-                sendId = new Long(000);
+                sendId = new Long(0);
                 addrType = "system";
                 break;
             default:
@@ -147,7 +148,9 @@ public class MyWebSocketHandler extends TextWebSocketHandler {
         }
         //判断是否是初次进入 初次进入小会场
         creatMeetActor(meetingId, memberId, memberType, waiterId, waiterType);
-        ;
+        if(StringUtils.isEmpty(content)){
+            sessionManage.sendMessageSys(SysConstant.STATUS_TOW, "发送消息不能为空", addr);
+        }
         sessionManage.handleTextMeg(addr, content, sendId, addrType, contentType, jsonObject);
         System.out.println("接收数据：" + message.getPayload().toString());
         // 处理消息 msgContent消息内容
@@ -185,7 +188,8 @@ public class MyWebSocketHandler extends TextWebSocketHandler {
 
     /**
      * 是否初次进入小会场
-     *2 @param meetingId  下会场id
+     * 2 @param meetingId  下会场id
+     *
      * @param memberId
      * @param memberType
      * @param waiterId
