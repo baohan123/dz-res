@@ -48,10 +48,6 @@ public class RabbitMQListener  /*implements BatchMessageListener */{
     @Autowired
     MeetingDao meetingDao;
 
-
-
-
-
     //定义方法进行信息的监听   RabbitListener中的参数用于表示监听的是哪一个队列
     @RabbitListener(queues = "meeting_chatting")
     public void onMessage(@Payload String msg, @Header(AmqpHeaders.DELIVERY_TAG) long deliveryTag, Channel channel) throws IOException{
