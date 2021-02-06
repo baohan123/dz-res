@@ -5,9 +5,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.dz.dzim.common.GeneralUtils;
 import com.dz.dzim.common.SysConstant;
-import com.dz.dzim.config.rabbitmq.RabbitMqConfig;
 import com.dz.dzim.mapper.MeetingActorDao;
-import com.dz.dzim.mapper.MeetingPlazaDao;
 import com.dz.dzim.pojo.OnlineUserNew;
 import com.dz.dzim.pojo.doman.MeetingActorEntity;
 import com.dz.dzim.service.SessionManage;
@@ -36,8 +34,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class MyWebSocketHandler extends TextWebSocketHandler {
     private Logger log = LoggerFactory.getLogger(this.getClass());
 
-    @Autowired
-    RabbitTemplate rabbitTemplate;
+//    @Autowired
+//    RabbitTemplate rabbitTemplate;
 
 
     //小会场关联表
@@ -216,12 +214,15 @@ public class MyWebSocketHandler extends TextWebSocketHandler {
                     null, meetingId, null,
                     new Date(), null,
                     SysConstant.ZERO, null);
-            rabbitTemplate.convertAndSend(RabbitMqConfig.EXCHANGE_NAME, RabbitMqConfig.KEY2, GeneralUtils.objectToString("insert", meetingActorEntity));
+           // rabbitTemplate.convertAndSend(RabbitMqConfig.EXCHANGE_NAME, RabbitMqConfig.KEY2, GeneralUtils.objectToString("insert", meetingActorEntity));
+            meetingActorDao.insert(meetingActorEntity);
             MeetingActorEntity meetingActorEntity1 = new MeetingActorEntity(null, waiterId, waiterType,
                     null, meetingId, null,
                     new Date(), null,
                     SysConstant.ZERO, null);
-            rabbitTemplate.convertAndSend(RabbitMqConfig.EXCHANGE_NAME, RabbitMqConfig.KEY2, GeneralUtils.objectToString("insert", meetingActorEntity1));
+            //rabbitTemplate.convertAndSend(RabbitMqConfig.EXCHANGE_NAME, RabbitMqConfig.KEY2, GeneralUtils.objectToString("insert", meetingActorEntity1));
+            meetingActorDao.insert(meetingActorEntity1);
+
             return true;
         }
         return false;

@@ -3,7 +3,7 @@ package com.dz.dzim.service;
 import com.alibaba.fastjson.JSONObject;
 import com.dz.dzim.common.GeneralUtils;
 import com.dz.dzim.common.SysConstant;
-import com.dz.dzim.config.rabbitmq.RabbitMqConfig;
+//import com.dz.dzim.config.rabbitmq.RabbitMqConfig;
 import com.dz.dzim.mapper.ChatRecordMapper;
 
 import com.dz.dzim.pojo.doman.MeetingChattingEntity;

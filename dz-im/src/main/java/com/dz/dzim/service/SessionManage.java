@@ -6,8 +6,8 @@ import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.dz.dzim.common.GeneralUtils;
+import com.dz.dzim.common.ResultWebSocket;
 import com.dz.dzim.common.SysConstant;
-import com.dz.dzim.config.rabbitmq.RabbitMqConfig;
 import com.dz.dzim.mapper.MeetingActorDao;
 import com.dz.dzim.mapper.MeetingChattingDao;
 import com.dz.dzim.mapper.MeetingDao;
@@ -48,6 +48,7 @@ public class SessionManage {
 
     @Autowired
     private MeetingPlazaDao meetingPlazaDao;
+
     @Autowired
     private MeetingActorDao meetingActorDao;
 
@@ -56,45 +57,30 @@ public class SessionManage {
     private MeetingDao meetingDao;
 
     @Autowired
-    RabbitTemplate rabbitTemplate;
+    private MeetingChattingDao meetingChattingDao;
+//    @Autowired
+//    RabbitTemplate rabbitTemplate;
 
     /**
      * 大会场 所有在线用户(session + userId + username + createTime  -->
      */
     public Map<Long, OnlineUserNew> clients = new ConcurrentHashMap<>();
 
-    //聊天记录
-    @Autowired
-    private MeetingChattingDao meetingChattingDao;
-
-    /**
-     * 小会场
-     */
-    //public Map<String, OnlineUserNew> smallclients = new HashMap<>();
-
 
     /**
      * 加入会场
-     *
      * @param session
      * @param talkerType
      * @param userid
      * @param bigId
      */
     public void adds(WebSocketSession session, String talkerType, Long userid, String bigId) {
-        OnlineUserNew onlineUserNew = new OnlineUserNew(bigId, userid, talkerType, session, null, new Date(),
-                null, SysConstant.STATUS_ONE, null, null);
-        clients.put(userid, onlineUserNew);
+        clients.put(userid, new OnlineUserNew(bigId, userid, talkerType, session, null, new Date(),
+                null, SysConstant.STATUS_ONE, null, null));
         String sysMsg = "用户:" + userid + "  类型：" + talkerType + "==加入大会场上线了啦";
-        JSONObject desc = new JSONObject();
-        desc.put("desc", sysMsg);
-        TextMessage textMessage = new TextMessage(
-                getObj(SysConstant.TWO, desc));
-        List<WebSocketExtension> extensions = session.getExtensions();
-        sendMessage("all", textMessage, null);
+        sendMessage("all", ResultWebSocket.txtMsg(SysConstant.TWO,sysMsg), null);
         //更新代抢列表
         rodList();
-
     }
 
     /**
@@ -118,10 +104,11 @@ public class SessionManage {
                 list.add(entry.getValue().getSession());
             }
         }
-        TextMessage lb = new TextMessage(getObj(SysConstant.STATUS_THREE, array));
+        TextMessage txtMsg = ResultWebSocket.txtMsg(SysConstant.STATUS_THREE, array);
         list.stream().forEach(s -> {
             try {
-                s.sendMessage(lb);
+
+                s.sendMessage(txtMsg);
             } catch (IOException e) {
                 e.printStackTrace();
                 logerror("在线列表发送失败");
@@ -135,7 +122,6 @@ public class SessionManage {
      * @param key
      */
     public OnlineUserNew get(Long key) {
-        Map<Long, OnlineUserNew> clients = this.clients;
         return this.clients.get(key);
     }
 
@@ -217,7 +203,8 @@ public class SessionManage {
                     contentType, System.currentTimeMillis(),
                     null, content, addr, addrType, null
             );
-            rabbitTemplate.convertAndSend(RabbitMqConfig.EXCHANGE_NAME, RabbitMqConfig.KEY1, GeneralUtils.objectToString("insert", meetingChattingEntity));
+            meetingChattingDao.insert(meetingChattingEntity);
+           // rabbitTemplate.convertAndSend(RabbitMqConfig.EXCHANGE_NAME, RabbitMqConfig.KEY1, GeneralUtils.objectToString("insert", meetingChattingEntity));
 
         } catch (IOException e) {
             e.printStackTrace();
