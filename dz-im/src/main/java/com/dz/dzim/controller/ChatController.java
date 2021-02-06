@@ -49,8 +49,6 @@ public class ChatController extends ExceptionHandle {
     @Autowired
     private MeetingDao meetingDao;
 
-//    @Autowired
-//    RabbitTemplate rabbitTemplate;
 
     @Autowired
     private MeetingChattingDao meetingChattingDao;
@@ -156,18 +154,5 @@ public class ChatController extends ExceptionHandle {
         return new ResponseVO("上传失败！");
     }
 
-
-    @RequestMapping("/test")
-    public String test(String[] args) {
-        AtomicInteger atomicInteger = new AtomicInteger(0);
-
-        for (int i = 0; i < 100000; i++) {
-            rabbitTemplate.convertAndSend(RabbitMqConfig.EXCHANGE_NAME, "key8","8888888");
-            atomicInteger.getAndIncrement();
-        }
-
-        return "测试完成: "+atomicInteger;
-
-    }
 
 }
