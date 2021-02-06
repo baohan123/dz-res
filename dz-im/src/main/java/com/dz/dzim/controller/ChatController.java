@@ -30,6 +30,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.*;
+import java.util.Date;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @RestController
 public class ChatController extends ExceptionHandle {
@@ -138,7 +141,7 @@ public class ChatController extends ExceptionHandle {
         queryWrapper.eq("talker", talker).or().eq("addr_id", talker).orderByDesc("server_time");
         if (null != startTime && SysConstant.ZERO != startTime) {
             Long finalEndTime = endTime;
-            queryWrapper.and(wrapper -> wrapper.ge("server_time", startTime).le("server_time", finalEndTime));
+            queryWrapper.and(wrapper -> wrapper.ge("server_time", startTime).le("server_time", finalEndTime)) ;
         }
         Page<MeetingChattingEntity> meetingChattingEntityPage = meetingChattingDao.selectPage(page, queryWrapper);
         return new ResponseVO(meetingChattingEntityPage);
