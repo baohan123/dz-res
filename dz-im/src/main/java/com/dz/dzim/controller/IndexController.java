@@ -8,9 +8,22 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 @Controller
 @Component
 public class IndexController {
+    public  static  HashMap<String,Long> mas = new HashMap<>();
+    public  static Map<String, Long> mapp = new HashMap<>();
+
+
+    public final static Map<String, Long> getRandomKf() {
+
+        return mapp;
+
+    }
 
 //    @Autowired
 //    private SendMsgService sendMsgService;
