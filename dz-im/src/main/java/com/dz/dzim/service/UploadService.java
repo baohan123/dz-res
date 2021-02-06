@@ -41,41 +41,20 @@ public class UploadService {
     private String imgDir;
 
 
-    public MeetingChattingEntity uploadImage(MultipartFile multipartFile, HttpServletRequest request, JSONObject jsonObject) throws Exception {
+    public String uploadImage(MultipartFile multipartFile, HttpServletRequest request) throws Exception {
 
         if (multipartFile.isEmpty()) {
             throw new Exception("multipartFile为空！");
         }
-       // String meetingId = jsonObject.getString("meetingId");//小会场id
-        Integer contentType = jsonObject.getInteger("contentType");//谁发给谁
-        Long memberId = jsonObject.getJSONObject("user").getLong("memberId");
-       // String memberType = jsonObject.getJSONObject("user").getString("memberType");
-        Long waiterId = jsonObject.getJSONObject("kf").getLong("waiterId");
-        String talkerType =null;
-        Long talker = new Long(0);
-        Long addrId = new Long(0);
-        if(SysConstant.EIGHT == contentType){
-             talker = memberId;
-             addrId = waiterId;
-            talkerType ="member";
-        } else {
-             talker = waiterId;
-             addrId = memberId;
-            talkerType ="waiter";
 
-        }
 
 
         String url = execute(multipartFile, request);
-        MeetingChattingEntity meetingChattingEntity = new MeetingChattingEntity(
-                null, talker, talkerType, null,
-                contentType, System.currentTimeMillis(),
-                null, url, addrId, null, null
-        );
+
        // rabbitTemplate.convertAndSend("imageExchange","img.#",url);
       //  rabbitTemplate.convertAndSend(RabbitMqConfig.EXCHANGE_NAME,RabbitMqConfig.KEY1, GeneralUtils.objectToString("insert", meetingChattingEntity));
 
-        return meetingChattingEntity;
+        return url;
     }
 
     private String execute(MultipartFile multipartFile, HttpServletRequest request) throws Exception {

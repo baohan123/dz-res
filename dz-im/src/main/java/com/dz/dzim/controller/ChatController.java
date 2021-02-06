@@ -149,9 +149,9 @@ public class ChatController extends ExceptionHandle {
     @PostMapping(value = "/upload/img")
     public ResponseVO uploadImage(@RequestParam("file") MultipartFile file, HttpServletRequest request, @RequestParam("body") String body) throws Exception {
         JSONObject jsonObject = JSONObject.parseObject(body);
-        MeetingChattingEntity imgsrc = uploadService.uploadImage(file, request, jsonObject);
+        String imgsrc = uploadService.uploadImage(file, request);
 
-        if (StringUtils.isNotBlank(imgsrc.getContent())) {
+        if (StringUtils.isNotBlank(imgsrc)) {
             return new ResponseVO(imgsrc);
         }
         return new ResponseVO("上传失败！");
