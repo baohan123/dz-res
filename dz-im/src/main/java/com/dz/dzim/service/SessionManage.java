@@ -1,11 +1,9 @@
 package com.dz.dzim.service;
 
-import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
-import com.dz.dzim.common.GeneralUtils;
 import com.dz.dzim.common.ResultWebSocket;
 import com.dz.dzim.common.SysConstant;
 import com.dz.dzim.mapper.MeetingActorDao;
@@ -19,7 +17,6 @@ import com.dz.dzim.pojo.doman.MeetingEntity;
 import com.dz.dzim.pojo.doman.MeetingPlazaEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.TextMessage;
@@ -192,6 +189,7 @@ public class SessionManage {
 
         } catch (IOException e) {
             e.printStackTrace();
+            logger.error("sessionmanger.handleTextMeg()==>"+"addrId:"+addr);
         }
 
     }
@@ -202,6 +200,7 @@ public class SessionManage {
             clients.get(addrId).getSession().sendMessage(ResultWebSocket.txtMsg(sendType,msg));
         } catch (IOException e) {
             e.printStackTrace();
+        logger.error("==>sendMessageSys()"+"addrId:"+addrId);
         }
 
     }
@@ -230,8 +229,39 @@ public class SessionManage {
             }
         } catch (Exception e) {
             e.printStackTrace();
+            logger.error("==>sendMessage()"+"addrId:"+addrId);
         }
     }
+    /**
+     * 是否初次进入小会场
+     * @param meetingId  下会场id
+     * @param memberId
+     * @param memberType
+     * @param waiterId
+     * @param waiterType
+     * @return
+     */
+    public boolean creatMeetActor(String meetingId, Long memberId, String memberType, Long waiterId, String waiterType) {
+        //查询子表是否有记录
+        List<MeetingActorEntity> byIdAndActor = meetingActorDao.selectList(new QueryWrapper<>(new MeetingActorEntity(meetingId, SysConstant.ZERO)));
+        //未建立会场
+        if (byIdAndActor.size() == 0) {
+            MeetingActorEntity meetingActorEntity = new MeetingActorEntity(null, memberId, memberType,
+                    null, meetingId, null,
+                    new Date(), null,
+                    SysConstant.ZERO, null);
+            // rabbitTemplate.convertAndSend(RabbitMqConfig.EXCHANGE_NAME, RabbitMqConfig.KEY2, GeneralUtils.objectToString("insert", meetingActorEntity));
+            meetingActorDao.insert(meetingActorEntity);
+            MeetingActorEntity meetingActorEntity1 = new MeetingActorEntity(null, waiterId, waiterType,
+                    null, meetingId, null,
+                    new Date(), null,
+                    SysConstant.ZERO, null);
+            //rabbitTemplate.convertAndSend(RabbitMqConfig.EXCHANGE_NAME, RabbitMqConfig.KEY2, GeneralUtils.objectToString("insert", meetingActorEntity1));
+            meetingActorDao.insert(meetingActorEntity1);
 
+            return true;
+        }
+        return false;
+    }
 
 }
