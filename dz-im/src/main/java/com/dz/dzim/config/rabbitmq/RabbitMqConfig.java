@@ -10,6 +10,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 
 /**
  * @author
@@ -34,7 +36,6 @@ public class RabbitMqConfig {
     public static final String KEY2="msg2";
     public static final String KEY3="msg3";
     public static final String KEY4="msg4";
-
 
     //声明交换机
     @Bean("bootExchange")
@@ -96,6 +97,8 @@ public class RabbitMqConfig {
     }
 
 
+    public static AtomicInteger atomicInteger = new AtomicInteger(1);
+
     /**
      * 设置返回回调和确认回调
      *
@@ -138,10 +141,18 @@ public class RabbitMqConfig {
                 String msgId = message.getMessageProperties().getCorrelationId();
                 String data = new String(message.getBody());
                 logger.error("消息发送到指定队列失败-消息回退，应答码：{}，原因：{}，交换机：{}，路由键：{}", replyCode, replyText, exchange, routingKey);
-                logger.error("msgId==>"+msgId);
                 logger.error("data==>"+data);
-                //进行消息重新发送
-                // rabbitTemplate.convertAndSend(exchange, routingKey, message);
+
+                /*这里需要判断一下，可能出现消息不能到达队列中，触发一直return回调造成阻塞，
+                * 所以需要计算一下触发return次数达到多少后，强制关闭return*/
+                if (atomicInteger.get() > 5) {
+                    return;
+                }else{
+                    System.out.println("重试第 " + atomicInteger + " 次！");
+                    atomicInteger.getAndIncrement();
+                    /*进行消息重新发送*/
+                    rabbitTemplate.convertAndSend(exchange, routingKey, message);
+                }
             }
         });
         rabbitTemplate.setMandatory(true);
