@@ -176,11 +176,11 @@ public class ChatController extends ExceptionHandle {
 
         HashMap<String,Long> mapp = new HashMap<>();
 
-        mapp.put("kf@s", 22221L);
-        mapp.put("kf@s", 22222L);
-        mapp.put("kf@s", 22223L);
-        mapp.put("kf@s", 22224L);
-        mapp.put("kf@s", 22225L);
+        mapp.put("kf1@s", 22221L);
+        mapp.put("kf2@s", 22222L);
+        mapp.put("kf3@s", 22223L);
+        mapp.put("kf4@s", 22224L);
+        mapp.put("kf5@s", 22225L);
         IndexController.mapp = mapp;
 
         return new ResponseVO("上传失败！");

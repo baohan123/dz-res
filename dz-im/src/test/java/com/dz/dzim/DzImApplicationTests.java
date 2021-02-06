@@ -1,6 +1,5 @@
 package com.dz.dzim;
 
-import com.dz.dzim.config.rabbitmq.RabbitMqConfig;
 import org.junit.jupiter.api.Test;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,7 +14,7 @@ class DzImApplicationTests {
     @Test
     void contextLoads() {
         for (int i = 0; i < 10000; i++) {
-            rabbitTemplate.convertAndSend(RabbitMqConfig.EXCHANGE_NAME,"","&&&&&&&&");
+          //  rabbitTemplate.convertAndSend(RabbitMqConfig.EXCHANGE_NAME,"","&&&&&&&&");
         }
     }
 
