@@ -55,10 +55,8 @@ public class SessionManage {
     @Autowired
     private MeetingDao meetingDao;
 
-
     @Autowired
     RabbitTemplate rabbitTemplate;
-
 
     /**
      * 大会场 所有在线用户(session + userId + username + createTime  -->
