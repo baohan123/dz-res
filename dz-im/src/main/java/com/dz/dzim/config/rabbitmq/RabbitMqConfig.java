@@ -47,25 +47,6 @@ public class RabbitMqConfig {
     private static Map<String,Object> dlxMap;
 
 
-//    /* 死信交换机*/
-//    @Bean
-//    public Exchange dlxExchange(){
-//        return ExchangeBuilder.topicExchange(dlxExchangeName).durable(true).build();
-//    }
-//
-//    /*死信队列*/
-//    @Bean
-//    public Queue dlxQueue(){
-//        return QueueBuilder.durable(dlxQueueName).build();
-//    }
-//
-//    @Bean
-//    public BindingBuilder.GenericArgumentsConfigurer dlcBinding(@Qualifier("dlxQueue") Queue queue, @Qualifier("dlxExchange") Exchange exchange) {
-//        return BindingBuilder.bind(queue)
-//                .to(exchange)
-//                .with(KEY1);
-//    }
-
     //声明交换机
     @Bean("bootExchange")
     public Exchange bootExchange() {
@@ -143,14 +124,14 @@ public class RabbitMqConfig {
         rabbitTemplate.setConfirmCallback(new RabbitTemplate.ConfirmCallback() {
             @Override
             public void confirm(CorrelationData correlationData, boolean ack, String cause) {
-                //ack 为  true表示 消息已经到达交换机
+                //ack 为 true表示 消息已经到达交换机
                 if (ack) {
                     //接收成功
-                    logger.info("交换机接收消息成功:" + cause);
+                    logger.info("消息发送到交换机成功" );
                 } else {
                     //接收失败
                     // 根据本地消息的状态为失败，可以用定时任务去处理数据
-                    logger.info("交换机接收失败消息====>:" + cause);
+                    logger.info("消息发送到交换机失败 ====>:" + cause);
                 }
             }
         });
@@ -168,18 +149,14 @@ public class RabbitMqConfig {
             public void returnedMessage(Message message, int replyCode, String replyText, String exchange, String routingKey) {
                 String msgId = message.getMessageProperties().getCorrelationId();
                 String data = new String(message.getBody());
-                logger.error("消息发送失败-消息回退，应答码：{}，原因：{}，交换机：{}，路由键：{}", replyCode, replyText, exchange, routingKey);
+                logger.error("消息发送到指定队列失败-消息回退，应答码：{}，原因：{}，交换机：{}，路由键：{}", replyCode, replyText, exchange, routingKey);
                 logger.error("msgId==>"+msgId);
                 logger.error("data==>"+data);
-
-
                 //进行消息重新发送
-//                rabbitTemplate.convertAndSend(exchange, routingKey, message);
+                // rabbitTemplate.convertAndSend(exchange, routingKey, message);
             }
         });
 
-        //Mandatory为true时,消息通过交换器无法匹配到队列会返回给生产者，为false时匹配不到会直接被丢弃
-        rabbitTemplate.setMandatory(true);
 
         return rabbitTemplate;
     }

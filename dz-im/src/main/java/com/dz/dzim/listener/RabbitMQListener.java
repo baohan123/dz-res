@@ -6,14 +6,10 @@ import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.dz.dzim.mapper.*;
 import com.dz.dzim.pojo.doman.*;
 import com.dz.dzim.utils.ObjectUtis;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.rabbitmq.client.DefaultConsumer;
-import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.amqp.core.BatchMessageListener;
-import org.springframework.amqp.core.Message;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
-import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,13 +21,19 @@ import com.rabbitmq.client.Channel;
 
 import javax.annotation.Resource;
 import java.io.IOException;
+import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 
 /**
  * @author
  */
 @Component
-public class RabbitMQListener  /*implements BatchMessageListener */{
+public class RabbitMQListener {
 
     @Autowired
     private MeetingChattingDao meetingChattingDao;
@@ -48,43 +50,80 @@ public class RabbitMQListener  /*implements BatchMessageListener */{
     @Autowired
     MeetingDao meetingDao;
 
+
+    private final Logger logger = LoggerFactory.getLogger(this.getClass());
+
+    public static AtomicInteger atomicInteger = new AtomicInteger(1);
+
+    public static Map eMap = new HashMap<String, Object>();
+
+    @Autowired
+    FailMessageMapper failMessageMapper;
+
+    /*异常处理方法*/
+    private void excepHandler(@Header(AmqpHeaders.DELIVERY_TAG) long deliveryTag, Channel channel, IOException e, String msg) throws IOException {
+        e.printStackTrace();
+        if (atomicInteger.get() > 5) {
+            System.out.println("重试多次后消息最终消费失败！");
+            channel.basicAck(deliveryTag, true);
+            /*失败消息入库或者发邮件
+            需要根据msg的不同类型，调用不同的mapper接口进行插入操作，实现失败消息入库操作
+            * */
+
+            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            String format = simpleDateFormat.format(new Date());
+            Timestamp timestamp = Timestamp.valueOf(format);
+            failMessageMapper.insert(new FailMessage(msg,timestamp));
+
+            /*重置计数器*/
+            atomicInteger.set(1);
+        } else {
+            System.out.println("重试第 " + atomicInteger + " 次！");
+            channel.basicNack(deliveryTag, true, true);
+            atomicInteger.getAndIncrement();
+        }
+    }
+
+
     //定义方法进行信息的监听   RabbitListener中的参数用于表示监听的是哪一个队列
     @RabbitListener(queues = "meeting_chatting")
     public void onMessage(@Payload String msg, @Header(AmqpHeaders.DELIVERY_TAG) long deliveryTag, Channel channel) throws IOException{
 
-        if (StringUtils.isNotBlank(msg)){
-            JSONObject jsonObject = JSONObject.parseObject(msg);
+        try {
+            if (StringUtils.isNotBlank(msg)){
+                JSONObject jsonObject = JSONObject.parseObject(msg);
 
-            String type = (String) jsonObject.getString("type");
+                String type = (String) jsonObject.getString("type");
+                String obj = jsonObject.getString("obj");
 
-            String obj = jsonObject.getString("obj");
+                MeetingChattingEntity meetingChattingEntity = JSON.parseObject(obj, MeetingChattingEntity.class);
 
+                if (StringUtils.equals("insert",type)){
 
-            MeetingChattingEntity meetingChattingEntity = JSON.parseObject(obj, MeetingChattingEntity.class);
+                    if (!ObjectUtis.isAllFieldNull(meetingChattingEntity)){
+                        meetingChattingDao.insert( meetingChattingEntity);
+                    }
+                }
+                if (StringUtils.equals("update",type)){
 
-            if (StringUtils.equals("insert",type)){
-
-                if (!ObjectUtis.isAllFieldNull(meetingChattingEntity)){
-                    meetingChattingDao.insert( meetingChattingEntity);
+                    if (!ObjectUtis.isAllFieldNull(meetingChattingEntity)){
+                        meetingChattingDao.updateById(meetingChattingEntity);
+                    }
                 }
             }
-            if (StringUtils.equals("update",type)){
+            channel.basicAck(deliveryTag, true);
+            logger.info("收到了消息ID: " + deliveryTag + "," + "消息内容" + msg);
 
-                if (!ObjectUtis.isAllFieldNull(meetingChattingEntity)){
-                    meetingChattingDao.updateById(meetingChattingEntity);
-                }
-            }
+        } catch (IOException e){
+            excepHandler(deliveryTag, channel, e, msg);
         }
-
-        System.out.println("消息{}消费成功:"+msg);
-
     }
 
     //定义方法进行信息的监听   RabbitListener中的参数用于表示监听的是哪一个队列
     @RabbitListener(queues = "meeting_actor")
     public void onMessages(@Payload String msg, @Header(AmqpHeaders.DELIVERY_TAG) long deliveryTag, Channel channel) throws IOException {
 
-
+        try {
             if (StringUtils.isNotBlank(msg)){
 
                 JSONObject jsonObject = JSONObject.parseObject(msg);
@@ -113,7 +152,11 @@ public class RabbitMQListener  /*implements BatchMessageListener */{
                     }
                 }
             }
-
+            channel.basicAck(deliveryTag, true);
+            logger.info("收到了消息ID: " + deliveryTag + "," + "消息内容" + msg);
+        } catch (IOException e) {
+            excepHandler(deliveryTag, channel, e, msg);
+        }
     }
 
 
@@ -121,6 +164,7 @@ public class RabbitMQListener  /*implements BatchMessageListener */{
     @RabbitListener(queues = "meeting_plaza")
     public void onMessage3(@Payload String msg, @Header(AmqpHeaders.DELIVERY_TAG) long deliveryTag, Channel channel) throws IOException {
 
+        try {
             if (StringUtils.isNotBlank(msg)){
 
                 JSONObject jsonObject = JSONObject.parseObject(msg);
@@ -142,6 +186,11 @@ public class RabbitMQListener  /*implements BatchMessageListener */{
                     }
                 }
             }
+            channel.basicAck(deliveryTag, true);
+            logger.info("收到了消息ID: " + deliveryTag + "," + "消息内容" + msg);
+        } catch (IOException e) {
+            excepHandler(deliveryTag, channel, e, msg);
+        }
     }
 
 
@@ -149,6 +198,7 @@ public class RabbitMQListener  /*implements BatchMessageListener */{
     @RabbitListener(queues = "meeting")
     public void onMessage4(@Payload String msg, @Header(AmqpHeaders.DELIVERY_TAG) long deliveryTag, Channel channel) throws IOException {
 
+        try {
             if (StringUtils.isNotBlank(msg)){
 
                 JSONObject jsonObject = JSONObject.parseObject(msg);
@@ -171,6 +221,11 @@ public class RabbitMQListener  /*implements BatchMessageListener */{
                     }
                 }
             }
+            channel.basicAck(deliveryTag, true);
+            logger.info("收到了消息ID: " + deliveryTag + "," + "消息内容" + msg);
+        } catch (IOException e) {
+            excepHandler(deliveryTag, channel, e,msg);
+        }
     }
 
 

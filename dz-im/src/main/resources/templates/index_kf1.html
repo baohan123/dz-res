@@ -29,7 +29,7 @@ index_kf1
     //判断当前浏览器是否支持WebSocket
     if ('WebSocket' in window) {
         //连接WebSocket节点
-        websocket = new WebSocket("ws://39.100.203.75:8996/connectWebSocket2?talkerType=waiter&userid=999999&bigId=ttttrrtttt&meetingId");
+        websocket = new WebSocket("ws://localhost:8999/connectWebSocket2?talkerType=waiter&userid=999999&bigId=ttttrrtttt&meetingId");
     } else {
         alert('Not support websocket')
     }
@@ -90,7 +90,7 @@ index_kf1
             txt:message
         }
         JSON.stringify(msg)
-        websocket.send(msg);
+        // websocket.send(msg);
     }
 </script>
 </html>

@@ -33,6 +33,7 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.servlet.http.HttpServletRequest;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @RestController
 public class ChatController extends ExceptionHandle {
@@ -55,7 +56,6 @@ public class ChatController extends ExceptionHandle {
 
     @Autowired
     private UploadService uploadService;
-
 
     /**
      * @param username 查询条件
@@ -154,5 +154,18 @@ public class ChatController extends ExceptionHandle {
         return new ResponseVO("上传失败！");
     }
 
+
+    @RequestMapping("/test")
+    public String test(String[] args) {
+        AtomicInteger atomicInteger = new AtomicInteger(0);
+
+        for (int i = 0; i < 100000; i++) {
+            rabbitTemplate.convertAndSend(RabbitMqConfig.EXCHANGE_NAME, "key8","8888888");
+            atomicInteger.getAndIncrement();
+        }
+
+        return "测试完成: "+atomicInteger;
+
+    }
 
 }
