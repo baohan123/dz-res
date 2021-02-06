@@ -73,7 +73,13 @@ public class MyWebSocketHandler extends TextWebSocketHandler {
      */
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
-        JSONObject jsonObject = JSONObject.parseObject(message.getPayload());
+        String payload = message.getPayload();
+        if(StringUtils.isEmpty(payload) ){
+            session.sendMessage(
+                    ResultWebSocket.txtMsg(SysConstant.TEN_SXE, "消息不能为空"));
+            return;
+        }
+        JSONObject jsonObject = JSONObject.parseObject(payload);
         String meetingId = jsonObject.getString("meetingId");//小会场id
         Integer contentType = jsonObject.getInteger("contentType");//谁发给谁
 //        if (SysConstant.ONE == contentType) {
