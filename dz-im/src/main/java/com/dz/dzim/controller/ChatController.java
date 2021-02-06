@@ -147,8 +147,7 @@ public class ChatController extends ExceptionHandle {
 
 
     @PostMapping(value = "/upload/img")
-    public ResponseVO uploadImage(@RequestParam("file") MultipartFile file, HttpServletRequest request, @RequestParam("body") String body) throws Exception {
-        JSONObject jsonObject = JSONObject.parseObject(body);
+    public ResponseVO uploadImage(@RequestParam("file") MultipartFile file, HttpServletRequest request) throws Exception {
         String imgsrc = uploadService.uploadImage(file, request);
 
         if (StringUtils.isNotBlank(imgsrc)) {

@@ -177,26 +177,10 @@ public class SessionManage {
 
     }
 
-    /**
-     * 组装返回结果
-     *
-     * @param returnType
-     * @param msg
-     * @return
-     */
-    public String getObj(Integer returnType, Object msg) {
-        JSONObject object = new JSONObject();
-        object.put("returnType", returnType);
-        object.put("msg", msg);
-        return JSONObject.toJSONString(object);
-    }
-
     public void handleTextMeg(Long addr, String content, Long sendId, String addrType,
                               Integer contentType, JSONObject jsonObject) {
         try {
-
-            TextMessage textMessage = new TextMessage(getObj(SysConstant.STATUS_FOUR, jsonObject));
-            get(addr).getSession().sendMessage(textMessage);
+            get(addr).getSession().sendMessage(ResultWebSocket.txtMsg(SysConstant.STATUS_FOUR, jsonObject));
 
             MeetingChattingEntity meetingChattingEntity = new MeetingChattingEntity(
                     null, sendId, addrType, null,
@@ -214,9 +198,8 @@ public class SessionManage {
 
     //系统消息
     public void sendMessageSys(Integer sendType, Object msg, Long addrId) {
-        TextMessage textMessage = new TextMessage(getObj(sendType, msg));
         try {
-            clients.get(addrId).getSession().sendMessage(textMessage);
+            clients.get(addrId).getSession().sendMessage(ResultWebSocket.txtMsg(sendType,msg));
         } catch (IOException e) {
             e.printStackTrace();
         }
