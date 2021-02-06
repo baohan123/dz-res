@@ -136,6 +136,17 @@ public class MyWebSocketHandler extends TextWebSocketHandler {
                 break;
             default:
                 break;
+            //用户发送图片-》客服
+            case 12:
+                addr = waiterId;
+                sendId = memberId;
+                addrType = memberType;
+                break;
+            //客服发送图片-》用户
+            case 13:
+                addr = memberId;
+                sendId = waiterId;
+                addrType = waiterType;
         }
         if (true == isture) {
             //初次建立会场后 更新用户状态 ，更新代抢列表
@@ -148,7 +159,7 @@ public class MyWebSocketHandler extends TextWebSocketHandler {
         }
         //判断是否是初次进入 初次进入小会场
         creatMeetActor(meetingId, memberId, memberType, waiterId, waiterType);
-        if(StringUtils.isEmpty(content)){
+        if (StringUtils.isEmpty(content)) {
             sessionManage.sendMessageSys(SysConstant.STATUS_TOW, "发送消息不能为空", addr);
         }
         sessionManage.handleTextMeg(addr, content, sendId, addrType, contentType, jsonObject);
