@@ -30,6 +30,7 @@ public class SysConstant {
     public static final int STATUS_THREE = 3;
     public static final int STATUS_FOUR = 4;
     public static final int ELEVEN = 11;
+    public static final int TEN_SXE = 16;
 
 
 }

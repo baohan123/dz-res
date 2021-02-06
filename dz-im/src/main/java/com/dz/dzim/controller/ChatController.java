@@ -8,8 +8,6 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.dz.dzim.common.GeneralUtils;
 import com.dz.dzim.common.Result;
 import com.dz.dzim.common.SysConstant;
-import com.dz.dzim.common.enums.CodeEnum;
-import com.dz.dzim.config.rabbitmq.RabbitMqConfig;
 import com.dz.dzim.exception.handler.ExceptionHandle;
 import com.dz.dzim.mapper.ChatRecordMapper;
 import com.dz.dzim.mapper.MeetingChattingDao;
@@ -49,7 +47,10 @@ public class ChatController extends ExceptionHandle {
     private MeetingPlazaDao meetingPlazaDao;
 
     @Autowired
-    RabbitTemplate rabbitTemplate;
+    private MeetingDao meetingDao;
+
+//    @Autowired
+//    RabbitTemplate rabbitTemplate;
 
     @Autowired
     private MeetingChattingDao meetingChattingDao;
@@ -100,7 +101,8 @@ public class ChatController extends ExceptionHandle {
                 SysConstant.ONE,
                 prevIdNew,
                 nextIdNew);
-        rabbitTemplate.convertAndSend(RabbitMqConfig.EXCHANGE_NAME, RabbitMqConfig.KEY3, GeneralUtils.objectToString("insert", entity));
+        meetingPlazaDao.insert(entity);
+        //rabbitTemplate.convertAndSend(RabbitMqConfig.EXCHANGE_NAME, RabbitMqConfig.KEY3, GeneralUtils.objectToString("insert", entity));
         return new ResponseVO(id);
     }
 
@@ -112,7 +114,8 @@ public class ChatController extends ExceptionHandle {
     public ResponseVO creatSmallSession() {
         String id = GeneralUtils.randomUUID(SysConstant.SEX);
         MeetingEntity meetingEntity = new MeetingEntity(id, new Date(), SysConstant.ZERO, new Date());
-        rabbitTemplate.convertAndSend(RabbitMqConfig.EXCHANGE_NAME, RabbitMqConfig.KEY4, GeneralUtils.objectToString("insert", meetingEntity));
+        meetingDao.insert(meetingEntity);
+        //rabbitTemplate.convertAndSend(RabbitMqConfig.EXCHANGE_NAME, RabbitMqConfig.KEY4, GeneralUtils.objectToString("insert", meetingEntity));
         return new ResponseVO(id);
     }
 
@@ -144,11 +147,10 @@ public class ChatController extends ExceptionHandle {
 
 
     @PostMapping(value = "/upload/img")
-    public ResponseVO uploadImage(@RequestParam("file") MultipartFile file, HttpServletRequest request, @RequestParam("body") String body) throws Exception {
-        JSONObject jsonObject = JSONObject.parseObject(body);
-        MeetingChattingEntity imgsrc = uploadService.uploadImage(file, request, jsonObject);
+    public ResponseVO uploadImage(@RequestParam("file") MultipartFile file, HttpServletRequest request) throws Exception {
+        String imgsrc = uploadService.uploadImage(file, request);
 
-        if (StringUtils.isNotBlank(imgsrc.getContent())) {
+        if (StringUtils.isNotBlank(imgsrc)) {
             return new ResponseVO(imgsrc);
         }
         return new ResponseVO("上传失败！");

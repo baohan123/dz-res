@@ -4,10 +4,9 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.dz.dzim.common.GeneralUtils;
+import com.dz.dzim.common.ResultWebSocket;
 import com.dz.dzim.common.SysConstant;
-import com.dz.dzim.config.rabbitmq.RabbitMqConfig;
 import com.dz.dzim.mapper.MeetingActorDao;
-import com.dz.dzim.mapper.MeetingPlazaDao;
 import com.dz.dzim.pojo.OnlineUserNew;
 import com.dz.dzim.pojo.doman.MeetingActorEntity;
 import com.dz.dzim.service.SessionManage;
@@ -36,8 +35,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class MyWebSocketHandler extends TextWebSocketHandler {
     private Logger log = LoggerFactory.getLogger(this.getClass());
 
-    @Autowired
-    RabbitTemplate rabbitTemplate;
+//    @Autowired
+//    RabbitTemplate rabbitTemplate;
 
 
     //小会场关联表
@@ -74,22 +73,28 @@ public class MyWebSocketHandler extends TextWebSocketHandler {
      */
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
-        JSONObject jsonObject = JSONObject.parseObject(message.getPayload());
-        String meetingId = jsonObject.getString("meetingId");//小会场id
-        Integer contentType = jsonObject.getInteger("contentType");//谁发给谁
-        if (SysConstant.ONE == contentType) {
-            session.sendMessage(new TextMessage(
-                    sessionManage.getObj(SysConstant.ONE, "心跳ok")));
+        String payload = message.getPayload();
+        if(StringUtils.isEmpty(payload) ){
+            session.sendMessage(
+                    ResultWebSocket.txtMsg(SysConstant.TEN_SXE, "消息不能为空"));
             return;
         }
+        JSONObject jsonObject = JSONObject.parseObject(payload);
+        String meetingId = jsonObject.getString("meetingId");//小会场id
+        Integer contentType = jsonObject.getInteger("contentType");//谁发给谁
+//        if (SysConstant.ONE == contentType) {
+//            session.sendMessage(
+//                    ResultWebSocket.txtMsg(SysConstant.ONE, "心跳ok"));
+//            return;
+//        }
         String content = jsonObject.getString("content");//发送内容
         Long memberId = jsonObject.getJSONObject("user").getLong("memberId");
         String memberType = jsonObject.getJSONObject("user").getString("memberType");
         Long waiterId = jsonObject.getJSONObject("kf").getLong("waiterId");
         //未读列表  未分配小会场
-        if (unList(meetingId, memberId, waiterId, jsonObject, content, session)) {
-            return;
-        }
+//        if (unList(meetingId, memberId, waiterId, jsonObject, content, session)) {
+//            return;
+//        }
         String waiterType = jsonObject.getJSONObject("kf").getString("waiterType");
 
         //收信人
@@ -102,11 +107,18 @@ public class MyWebSocketHandler extends TextWebSocketHandler {
         //内容
         String sysContent = null;
         switch (contentType) {
+            case 1:
+                session.sendMessage(
+                    ResultWebSocket.txtMsg(SysConstant.ONE, "心跳ok"));
+               return;
             //2 客服领取用户（初次建立小会场）
             case 2:
                 sessionManage.sendMessageSys(SysConstant.STATUS_TOW, jsonObject, memberId);
-                isture = true;
-                break;
+                OnlineUserNew onlineUserNew = sessionManage.clients.get(memberId);
+                onlineUserNew.setState(SysConstant.STATUS_TOW);
+                //更新代抢列表
+                sessionManage.rodList();
+                return;
             //用户发送至客服
             case 8:
                 addr = waiterId;
@@ -148,15 +160,7 @@ public class MyWebSocketHandler extends TextWebSocketHandler {
                 sendId = waiterId;
                 addrType = waiterType;
         }
-        if (true == isture) {
-            //初次建立会场后 更新用户状态 ，更新代抢列表
-            OnlineUserNew onlineUserNew = sessionManage.clients.get(memberId);
-            if (null == onlineUserNew) {
-                onlineUserNew.setState(SysConstant.STATUS_TOW);
-            }
-            sessionManage.rodList();
-            return;
-        }
+
         //判断是否是初次进入 初次进入小会场
         creatMeetActor(meetingId, memberId, memberType, waiterId, waiterType);
         if (StringUtils.isEmpty(content)) {
@@ -190,8 +194,7 @@ public class MyWebSocketHandler extends TextWebSocketHandler {
                 jsonObjects.add(jsonObject);
                 unreadList.put(String.valueOf(memberId), jsonObjects);
             }
-            session.sendMessage(new TextMessage(sessionManage.getObj(SysConstant.FIVE, this.unreadList)));
-            // return;
+            session.sendMessage(ResultWebSocket.txtMsg(SysConstant.FIVE, this.unreadList));
             return true;
         }
         return false;
@@ -216,12 +219,15 @@ public class MyWebSocketHandler extends TextWebSocketHandler {
                     null, meetingId, null,
                     new Date(), null,
                     SysConstant.ZERO, null);
-            rabbitTemplate.convertAndSend(RabbitMqConfig.EXCHANGE_NAME, RabbitMqConfig.KEY2, GeneralUtils.objectToString("insert", meetingActorEntity));
+            // rabbitTemplate.convertAndSend(RabbitMqConfig.EXCHANGE_NAME, RabbitMqConfig.KEY2, GeneralUtils.objectToString("insert", meetingActorEntity));
+            meetingActorDao.insert(meetingActorEntity);
             MeetingActorEntity meetingActorEntity1 = new MeetingActorEntity(null, waiterId, waiterType,
                     null, meetingId, null,
                     new Date(), null,
                     SysConstant.ZERO, null);
-            rabbitTemplate.convertAndSend(RabbitMqConfig.EXCHANGE_NAME, RabbitMqConfig.KEY2, GeneralUtils.objectToString("insert", meetingActorEntity1));
+            //rabbitTemplate.convertAndSend(RabbitMqConfig.EXCHANGE_NAME, RabbitMqConfig.KEY2, GeneralUtils.objectToString("insert", meetingActorEntity1));
+            meetingActorDao.insert(meetingActorEntity1);
+
             return true;
         }
         return false;

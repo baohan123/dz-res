@@ -32,7 +32,11 @@ user1
     //判断当前浏览器是否支持WebSocket
     if('WebSocket' in window){
         //连接WebSocket节点  member member
+<<<<<<< HEAD
         websocket = new WebSocket("ws://localhost:8999/connectWebSocket2?talkerType=member&userid=111111&bigId=1612418881529b84ffd89eae75b883d78d3&meetingId=erw2");
+=======
+        websocket = new WebSocket("ws://localhost:8996/connectWebSocket2?talkerType=member&userid=111111&bigId=1612418881529b84ffd89eae75b883d78d3&meetingId=erw2");
+>>>>>>> e9f239ba711be24afe0a565170bd701a74af8fd2
     }
     else{
         alert('Not support websocket')
