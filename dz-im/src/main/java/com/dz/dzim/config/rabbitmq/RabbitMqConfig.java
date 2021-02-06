@@ -10,10 +10,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import javax.annotation.PostConstruct;
-import java.util.HashMap;
-import java.util.Map;
-
 
 /**
  * @author
@@ -29,7 +25,6 @@ public class RabbitMqConfig {
     //定义交换机的名字
     public static final String EXCHANGE_NAME = "im-exchange";
     //定义队列的名字
-    public static final String QUEUE_NAME = "queue";
     public static final String QUEUE_NAME1 = "meeting_chatting";
     public static final String QUEUE_NAME2 = "meeting_actor";
     public static final String QUEUE_NAME3 = "meeting_plaza";
@@ -39,12 +34,6 @@ public class RabbitMqConfig {
     public static final String KEY2="msg2";
     public static final String KEY3="msg3";
     public static final String KEY4="msg4";
-
-    private static String dlxExchangeName ="dlx-exch";
-    private static String dlxQueueName ="dlx-que";
-    private static String dlxRoutingKey ="dlx-key";
-
-    private static Map<String,Object> dlxMap;
 
 
     //声明交换机
@@ -76,35 +65,34 @@ public class RabbitMqConfig {
     }
 
     @Bean
-    public BindingBuilder.GenericArgumentsConfigurer bindQueueExchange1(@Qualifier("bootQueue1") Queue queue, @Qualifier("bootExchange") Exchange exchange) {
+    public Binding bindQueueExchange1(@Qualifier("bootQueue1") Queue queue, @Qualifier("bootExchange") Exchange exchange) {
         return BindingBuilder.bind(queue)
                 .to(exchange)
-                .with(KEY1);
+                .with(KEY1).noargs();
 
     }
 
     @Bean
-    public BindingBuilder.GenericArgumentsConfigurer bindQueueExchange2(@Qualifier("bootQueue2") Queue queue, @Qualifier("bootExchange") Exchange exchange) {
+    public Binding bindQueueExchange2(@Qualifier("bootQueue2") Queue queue, @Qualifier("bootExchange") Exchange exchange) {
         return BindingBuilder.bind(queue)
                 .to(exchange)
-                .with(KEY2);
+                .with(KEY2).noargs();
 
     }
 
     @Bean
-    public BindingBuilder.GenericArgumentsConfigurer bindQueueExchange3(@Qualifier("bootQueue3") Queue queue, @Qualifier("bootExchange") Exchange exchange) {
+    public Binding bindQueueExchange3(@Qualifier("bootQueue3") Queue queue, @Qualifier("bootExchange") Exchange exchange) {
         return BindingBuilder.bind(queue)
                 .to(exchange)
-                .with(KEY3);
+                .with(KEY3).noargs();
 
     }
 
     @Bean
-    public BindingBuilder.GenericArgumentsConfigurer bindQueueExchange4(@Qualifier("bootQueue4") Queue queue, @Qualifier("bootExchange") Exchange exchange) {
+    public Binding bindQueueExchange4(@Qualifier("bootQueue4") Queue queue, @Qualifier("bootExchange") Exchange exchange) {
         return BindingBuilder.bind(queue)
                 .to(exchange)
-                .with(KEY4);
-
+                .with(KEY4).noargs();
     }
 
 
@@ -156,8 +144,7 @@ public class RabbitMqConfig {
                 // rabbitTemplate.convertAndSend(exchange, routingKey, message);
             }
         });
-
-
+        rabbitTemplate.setMandatory(true);
         return rabbitTemplate;
     }
 }

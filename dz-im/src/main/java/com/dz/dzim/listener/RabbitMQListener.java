@@ -50,31 +50,28 @@ public class RabbitMQListener {
     @Autowired
     MeetingDao meetingDao;
 
-
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
-
     public static AtomicInteger atomicInteger = new AtomicInteger(1);
 
-    public static Map eMap = new HashMap<String, Object>();
 
     @Autowired
     FailMessageMapper failMessageMapper;
 
     /*异常处理方法*/
-    private void excepHandler(@Header(AmqpHeaders.DELIVERY_TAG) long deliveryTag, Channel channel, IOException e, String msg) throws IOException {
+    private void excepHandler(@Header(AmqpHeaders.DELIVERY_TAG) long deliveryTag, Channel channel, IOException e, String msg) throws Exception {
+
         e.printStackTrace();
+
         if (atomicInteger.get() > 5) {
             System.out.println("重试多次后消息最终消费失败！");
             channel.basicAck(deliveryTag, true);
             /*失败消息入库或者发邮件
             需要根据msg的不同类型，调用不同的mapper接口进行插入操作，实现失败消息入库操作
             * */
-
             SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
             String format = simpleDateFormat.format(new Date());
             Timestamp timestamp = Timestamp.valueOf(format);
             failMessageMapper.insert(new FailMessage(msg,timestamp));
-
             /*重置计数器*/
             atomicInteger.set(1);
         } else {
@@ -87,12 +84,12 @@ public class RabbitMQListener {
 
     //定义方法进行信息的监听   RabbitListener中的参数用于表示监听的是哪一个队列
     @RabbitListener(queues = "meeting_chatting")
-    public void onMessage(@Payload String msg, @Header(AmqpHeaders.DELIVERY_TAG) long deliveryTag, Channel channel) throws IOException{
+    public void onMessage(@Payload String msg, @Header(AmqpHeaders.DELIVERY_TAG) long deliveryTag, Channel channel) throws Exception{
 
         try {
             if (StringUtils.isNotBlank(msg)){
-                JSONObject jsonObject = JSONObject.parseObject(msg);
 
+                JSONObject jsonObject = JSONObject.parseObject(msg);
                 String type = (String) jsonObject.getString("type");
                 String obj = jsonObject.getString("obj");
 
@@ -111,6 +108,7 @@ public class RabbitMQListener {
                     }
                 }
             }
+
             channel.basicAck(deliveryTag, true);
             logger.info("收到了消息ID: " + deliveryTag + "," + "消息内容" + msg);
 
@@ -121,8 +119,7 @@ public class RabbitMQListener {
 
     //定义方法进行信息的监听   RabbitListener中的参数用于表示监听的是哪一个队列
     @RabbitListener(queues = "meeting_actor")
-    public void onMessages(@Payload String msg, @Header(AmqpHeaders.DELIVERY_TAG) long deliveryTag, Channel channel) throws IOException {
-
+    public void onMessages(@Payload String msg, @Header(AmqpHeaders.DELIVERY_TAG) long deliveryTag, Channel channel) throws Exception {
         try {
             if (StringUtils.isNotBlank(msg)){
 
@@ -136,13 +133,10 @@ public class RabbitMQListener {
                 UpdateWrapper<MeetingActorEntity> updateWrapper = JSON.parseObject(obj, UpdateWrapper.class);
 
                 if (StringUtils.equals("insert",type)){
-
                     if (!ObjectUtis.isAllFieldNull(meetingActorEntity)){
                         meetingActorDao.insert(meetingActorEntity);
                     }
-
                     if (StringUtils.equals("update",type)){
-
                         if (!ObjectUtis.isAllFieldNull(meetingActorEntity)){
                             meetingActorDao.updateById(meetingActorEntity);
                         }
@@ -162,7 +156,7 @@ public class RabbitMQListener {
 
     //定义方法进行信息的监听   RabbitListener中的参数用于表示监听的是哪一个队列
     @RabbitListener(queues = "meeting_plaza")
-    public void onMessage3(@Payload String msg, @Header(AmqpHeaders.DELIVERY_TAG) long deliveryTag, Channel channel) throws IOException {
+    public void onMessage3(@Payload String msg, @Header(AmqpHeaders.DELIVERY_TAG) long deliveryTag, Channel channel) throws Exception {
 
         try {
             if (StringUtils.isNotBlank(msg)){
@@ -196,7 +190,7 @@ public class RabbitMQListener {
 
     //定义方法进行信息的监听   RabbitListener中的参数用于表示监听的是哪一个队列
     @RabbitListener(queues = "meeting")
-    public void onMessage4(@Payload String msg, @Header(AmqpHeaders.DELIVERY_TAG) long deliveryTag, Channel channel) throws IOException {
+    public void onMessage4(@Payload String msg, @Header(AmqpHeaders.DELIVERY_TAG) long deliveryTag, Channel channel) throws Exception {
 
         try {
             if (StringUtils.isNotBlank(msg)){
@@ -214,7 +208,6 @@ public class RabbitMQListener {
                         meetingDao.insert(meetingEntity);
                     }
                 }
-
                 if (StringUtils.equals("update",type)){
                     if (!ObjectUtis.isAllFieldNull(meetingEntity)){
                         meetingDao.updateById(meetingEntity);
