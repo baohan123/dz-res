@@ -23,16 +23,13 @@ import com.dz.dzim.service.UploadService;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
 import javax.servlet.http.HttpServletRequest;
 import java.util.*;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 @RestController
 public class ChatController extends ExceptionHandle {
@@ -59,19 +56,6 @@ public class ChatController extends ExceptionHandle {
     @Autowired
     private UploadService uploadService;
 
-
-    /**
-     * @param username 查询条件
-     * @param pageNum  当前页
-     * @param pageSize 分页长度
-     * @return
-     */
-    @GetMapping("/queryByPage")
-    public Result<Object> queryByPage(String username, Integer pageNum, Integer pageSize) {
-        Page<MsgRecordsEntity> page = new Page<>(pageNum, pageSize);
-        IPage<MsgRecordsEntity> customerIPage = chatRecordMapper.selectPage(page, null);
-        return Result.success(customerIPage);
-    }
 
     /**
      * 创建大会场

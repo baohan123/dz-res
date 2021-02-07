@@ -18,7 +18,7 @@ public class ResultWebSocket<T>  {
     public static TextMessage txtMsg(Integer returnType, Object msg) {
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("msg", msg);
-        jsonObject.put("returnType", returnType);
+        jsonObject.put("contentType", returnType);
         return new TextMessage(JSONObject.toJSONString(jsonObject));
     }
 

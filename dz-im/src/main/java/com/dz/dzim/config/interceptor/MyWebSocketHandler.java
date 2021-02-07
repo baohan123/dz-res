@@ -1,18 +1,13 @@
 package com.dz.dzim.config.interceptor;
 
-import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.dz.dzim.common.GeneralUtils;
 import com.dz.dzim.common.ResultWebSocket;
 import com.dz.dzim.common.SysConstant;
 import com.dz.dzim.mapper.MeetingActorDao;
 import com.dz.dzim.pojo.OnlineUserNew;
-import com.dz.dzim.pojo.doman.MeetingActorEntity;
 import com.dz.dzim.service.SessionManage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.*;
@@ -21,7 +16,6 @@ import org.thymeleaf.util.StringUtils;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.security.Principal;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -140,10 +134,6 @@ public class MyWebSocketHandler extends TextWebSocketHandler {
                 break;
             default:
                 break;
-        }
-
-        if (StringUtils.isEmpty(content)) {
-            sessionManage.sendMessageSys(SysConstant.STATUS_TOW, "发送消息不能为空", addr);
         }
         //判断是否是初次进入 初次进入小会场
         sessionManage.creatMeetActor(meetingId, memberId, memberType, waiterId, waiterType);

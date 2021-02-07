@@ -75,7 +75,7 @@ public class SessionManage {
         clients.put(userid, new OnlineUserNew(bigId, userid, talkerType, session, null, new Date(),
                 null, SysConstant.STATUS_ONE, null, null));
         String sysMsg = "用户:" + userid + "  类型：" + talkerType + "==加入大会场上线了啦";
-        sendMessage("all", ResultWebSocket.txtMsg(SysConstant.TWO,sysMsg), null);
+        sendMessage("all", ResultWebSocket.txtMsg(SysConstant.FOUR,sysMsg), null);
         //更新代抢列表
         rodList();
     }
@@ -111,6 +111,8 @@ public class SessionManage {
                 logerror("在线列表发送失败");
             }
         });
+        logger.info("更新代抢列表，当前用户共:==>"+array.size());
+
     }
 
     /**
@@ -150,6 +152,7 @@ public class SessionManage {
                 meetingActorDao.update(null, updateWrapper);
             }
         }
+        logger.info("下线end==>:"+key);
         //调mq 删除
         return remove;
     }
@@ -177,7 +180,7 @@ public class SessionManage {
     public void handleTextMeg(Long addr, String content, Long sendId, String addrType,
                               Integer contentType, JSONObject jsonObject) {
         try {
-            get(addr).getSession().sendMessage(ResultWebSocket.txtMsg(SysConstant.STATUS_FOUR, jsonObject));
+            get(addr).getSession().sendMessage(ResultWebSocket.txtMsg(contentType, jsonObject));
 
             MeetingChattingEntity meetingChattingEntity = new MeetingChattingEntity(
                     null, sendId, addrType, null,
