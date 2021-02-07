@@ -183,7 +183,7 @@ public class ChatController extends ExceptionHandle {
         mapp.put("kf5@s", 22225L);
         IndexController.mapp = mapp;
 
-        return new ResponseVO("上传失败！");
+        return new ResponseVO("初始化完成。。！");
     }
 
     @GetMapping(value = "/getUser")
