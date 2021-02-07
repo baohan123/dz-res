@@ -4,7 +4,9 @@ import com.alibaba.fastjson.JSONObject;
 import com.dz.dzim.common.ResultWebSocket;
 import com.dz.dzim.common.SysConstant;
 import com.dz.dzim.mapper.MeetingActorDao;
+import com.dz.dzim.mapper.MeetingChattingDao;
 import com.dz.dzim.pojo.OnlineUserNew;
+import com.dz.dzim.pojo.doman.MeetingChattingEntity;
 import com.dz.dzim.service.SessionManage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +34,8 @@ public class MyWebSocketHandler extends TextWebSocketHandler {
 //    @Autowired
 //    RabbitTemplate rabbitTemplate;
 
-
+    @Autowired
+    private MeetingChattingDao meetingChattingDao;
     //小会场关联表
     @Autowired
     private MeetingActorDao meetingActorDao;
@@ -134,6 +137,17 @@ public class MyWebSocketHandler extends TextWebSocketHandler {
                 break;
             default:
                 break;
+        }
+        //参数校验
+        if((StringUtils.isEmpty(meetingId) ||null == waiterId) && !StringUtils.isEmpty(content) ){
+            MeetingChattingEntity meetingChattingEntity = new MeetingChattingEntity(
+                    null, sendId, addrType, null,
+                    contentType, System.currentTimeMillis(),
+                    null, content, addr, addrType, null
+            );
+            meetingChattingDao.insert(meetingChattingEntity);
+            return;
+
         }
         //判断是否是初次进入 初次进入小会场
         sessionManage.creatMeetActor(meetingId, memberId, memberType, waiterId, waiterType);

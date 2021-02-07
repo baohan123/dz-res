@@ -43,12 +43,6 @@ public class UploadService {
 
     public String uploadImage(MultipartFile multipartFile, HttpServletRequest request) throws Exception {
 
-        if (multipartFile.isEmpty()) {
-            throw new Exception("multipartFile为空！");
-        }
-
-
-
         String url = execute(multipartFile, request);
 
        // rabbitTemplate.convertAndSend("imageExchange","img.#",url);

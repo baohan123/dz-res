@@ -22,6 +22,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketExtension;
 import org.springframework.web.socket.WebSocketSession;
+import org.thymeleaf.util.StringUtils;
 
 import java.io.IOException;
 import java.util.*;

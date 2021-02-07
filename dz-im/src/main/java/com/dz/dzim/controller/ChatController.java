@@ -16,13 +16,13 @@ import com.dz.dzim.mapper.MeetingPlazaDao;
 import com.dz.dzim.pojo.doman.MeetingChattingEntity;
 import com.dz.dzim.pojo.doman.MeetingEntity;
 import com.dz.dzim.pojo.doman.MeetingPlazaEntity;
-import com.dz.dzim.pojo.doman.MsgRecordsEntity;
 import com.dz.dzim.pojo.vo.QueryParams;
 import com.dz.dzim.pojo.vo.ResponseVO;
 import com.dz.dzim.service.UploadService;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -47,8 +47,8 @@ public class ChatController extends ExceptionHandle {
     @Autowired
     private MeetingDao meetingDao;
 
-//    @Autowired
-//    RabbitTemplate rabbitTemplate;
+    @Autowired
+    RabbitTemplate rabbitTemplate;
 
     @Autowired
     private MeetingChattingDao meetingChattingDao;
@@ -88,7 +88,7 @@ public class ChatController extends ExceptionHandle {
                 prevIdNew,
                 nextIdNew);
         meetingPlazaDao.insert(entity);
-        //rabbitTemplate.convertAndSend(RabbitMqConfig.EXCHANGE_NAME, RabbitMqConfig.KEY3, GeneralUtils.objectToString("insert", entity));
+      //  rabbitTemplate.convertAndSend(RabbitMqConfig.EXCHANGE_NAME, RabbitMqConfig.KEY3, GeneralUtils.objectToString("insert", entity));
         return new ResponseVO(id);
     }
 
@@ -131,11 +131,16 @@ public class ChatController extends ExceptionHandle {
         return new ResponseVO(meetingChattingEntityPage);
     }
 
-
+    /**
+     * 上传图片
+     * @param file  文件
+     * @param request
+     * @return
+     * @throws Exception
+     */
     @PostMapping(value = "/upload/img")
     public ResponseVO uploadImage(@RequestParam("file") MultipartFile file, HttpServletRequest request) throws Exception {
         String imgsrc = uploadService.uploadImage(file, request);
-
         if (StringUtils.isNotBlank(imgsrc)) {
             return new ResponseVO(imgsrc);
         }
