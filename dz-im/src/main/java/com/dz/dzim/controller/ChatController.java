@@ -103,8 +103,8 @@ public class ChatController extends ExceptionHandle {
      */
     @PostMapping("/creatSmallSession")
     public ResponseVO creatSmallSession(@RequestBody JSONObject jsonObject) {
-        String waiterId = jsonObject.getString("waiterId");
-        String memberId = jsonObject.getString("memberId");
+        Long waiterId = jsonObject.getLong("waiterId");
+        Long memberId = jsonObject.getLong("memberId");
         OnlineUserNew onlineUserNew = sessionManage.clients.get(memberId);
         String id = GeneralUtils.randomUUID(SysConstant.SEX);
         MeetingEntity meetingEntity = new MeetingEntity(id, new Date(), SysConstant.ZERO, new Date());
