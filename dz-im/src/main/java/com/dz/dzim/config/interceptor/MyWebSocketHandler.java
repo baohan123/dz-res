@@ -47,17 +47,24 @@ public class MyWebSocketHandler extends TextWebSocketHandler {
 
     /**
      * 建立成功事件
+     *
      * @param session
      * @throws Exception
      */
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         Map<String, Object> attributes = session.getAttributes();
-        String talkerType = (String) attributes.get("talkerType");
-        Long userid = new Long((String) attributes.get("userid"));
-        String bigId = (String) attributes.get("bigId");
-        sessionManage.adds(session, talkerType, userid, bigId);
-        log.info("connect websocket success.......userid,bigid"+userid+","+bigId);
+        if (null == attributes.get("meetingId") || "".equals(attributes.get("meetingId"))) {
+            String talkerType = (String) attributes.get("talkerType");
+            Long userid = new Long((String) attributes.get("userid"));
+            String bigId = (String) attributes.get("bigId");
+            sessionManage.adds(session, talkerType, userid, bigId);
+            log.info("connect websocket success.......userid,bigid" + userid + "," + bigId);
+            return;
+        }
+        sessionManage.sendMessage("all", ResultWebSocket.txtMsg(111, "小会场创建成功"), 0L);
+
+
     }
 
     /**
@@ -71,7 +78,7 @@ public class MyWebSocketHandler extends TextWebSocketHandler {
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         String payload = message.getPayload();
         JSONObject jsonObject = JSONObject.parseObject(payload);
-        String meetingId = jsonObject.getString("meetingId");
+        //String meetingId = jsonObject.getString("meetingId");
         //谁发给谁
         Integer contentType = jsonObject.getInteger("contentType");
         String content = jsonObject.getString("content");
@@ -139,7 +146,15 @@ public class MyWebSocketHandler extends TextWebSocketHandler {
                 break;
         }
         //参数校验
-        if((StringUtils.isEmpty(meetingId) ||null == waiterId) && !StringUtils.isEmpty(content) ){
+        Map<String, Object> attributes = session.getAttributes();
+        Object meetingIds = attributes.get("meetingId");
+
+        if (null == attributes.get("meetingId") || "".equals(attributes.get("meetingId"))) {
+            sessionManage.sendMessageSys(111, "当前无小会场id", sendId);
+            return;
+        }
+        String meetingId =(String) meetingIds;
+        if ((null == waiterId) && !StringUtils.isEmpty(content)) {
             MeetingChattingEntity meetingChattingEntity = new MeetingChattingEntity(
                     null, sendId, addrType, null,
                     contentType, System.currentTimeMillis(),
@@ -149,7 +164,8 @@ public class MyWebSocketHandler extends TextWebSocketHandler {
             return;
 
         }
-        //判断是否是初次进入 初次进入小会场
+
+            //判断是否是初次进入 初次进入小会场
         sessionManage.creatMeetActor(meetingId, memberId, memberType, waiterId, waiterType);
         //发送
         sessionManage.handleTextMeg(addr, content, sendId, addrType, contentType, jsonObject);
