@@ -59,7 +59,7 @@ public class MyWebSocketHandler extends TextWebSocketHandler {
         Long userid = new Long((String) attributes.get("userid"));
 
         //大会场连接
-        if (null == meetingId || "".equals(meetingId)) {
+        if (null == meetingId || "".equals(meetingId) || "null".equals(meetingId)) {
             String talkerType = (String) attributes.get("talkerType");
             String bigId = (String) attributes.get("bigId");
             sessionManage.adds(session, talkerType, userid, bigId);
