@@ -144,7 +144,7 @@ public class SessionManage {
      * @param key 并返回更新后的clent
      */
     public OnlineUserNew remove(Long key, String bigId, String meetingId, String talkerType) {
-
+        smallClent.remove(meetingId);
         OnlineUserNew remove = clients.remove(key);
         //如果用户下线 更新代抢列表
         if ("member".equals(talkerType)) {
