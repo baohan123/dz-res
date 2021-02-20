@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
  * @author baohan
@@ -64,9 +65,13 @@ public class SessionManage {
      */
     public Map<Long, OnlineUserNew> clients = new ConcurrentHashMap<>();
 
+    //小会场
+    public Map<String, CopyOnWriteArraySet<WebSocketSession>> smallClent = new ConcurrentHashMap<>();
+
 
     /**
      * 加入会场
+     *
      * @param session
      * @param talkerType
      * @param userid
@@ -76,7 +81,7 @@ public class SessionManage {
         clients.put(userid, new OnlineUserNew(bigId, userid, talkerType, session, null, new Date(),
                 null, SysConstant.STATUS_ONE, null, null));
         String sysMsg = "用户:" + userid + "  类型：" + talkerType + "==加入大会场上线了啦";
-        sendMessage("all", ResultWebSocket.txtMsg(SysConstant.FOUR,sysMsg), null);
+        sendMessage("all", ResultWebSocket.txtMsg(SysConstant.FOUR, sysMsg), null);
         //更新代抢列表
         rodList();
     }
@@ -112,7 +117,7 @@ public class SessionManage {
                 logerror("在线列表发送失败");
             }
         });
-        logger.info("更新代抢列表，当前用户共:==>"+array.size());
+        logger.info("更新代抢列表，当前用户共:==>" + array.size());
 
     }
 
@@ -138,11 +143,13 @@ public class SessionManage {
      *
      * @param key 并返回更新后的clent
      */
-    public OnlineUserNew remove(Long key, String bigId, String meetingId,String talkerType) {
+    public OnlineUserNew remove(Long key, String bigId, String meetingId, String talkerType) {
 
         OnlineUserNew remove = clients.remove(key);
         //如果用户下线 更新代抢列表
-        if("member".equals(talkerType)){rodList();}
+        if ("member".equals(talkerType)) {
+            rodList();
+        }
         meetingPlazaDao.updateById(new MeetingPlazaEntity(bigId, SysConstant.STATUS_FOUR, new Date()));
         if (null != meetingId) {
             meetingDao.updateById(new MeetingEntity(meetingId, new Date(), SysConstant.STATUS_THREE, SysConstant.STATUS_TOW));
@@ -153,7 +160,7 @@ public class SessionManage {
                 meetingActorDao.update(null, updateWrapper);
             }
         }
-        logger.info("下线end==>:"+key);
+        logger.info("下线end==>:" + key);
         //调mq 删除
         return remove;
     }
@@ -179,9 +186,13 @@ public class SessionManage {
     }
 
     public void handleTextMeg(Long addr, String content, Long sendId, String addrType,
-                              Integer contentType, JSONObject jsonObject) {
+                              Integer contentType, JSONObject jsonObject, String meetingId) {
         try {
-            get(addr).getSession().sendMessage(ResultWebSocket.txtMsg(contentType, jsonObject));
+            CopyOnWriteArraySet<WebSocketSession> webSocketSessions = smallClent.get(meetingId);
+            for (WebSocketSession websocketServerEndpoint : webSocketSessions) {
+                websocketServerEndpoint.sendMessage(ResultWebSocket.txtMsg(contentType, jsonObject));
+            }
+            // get(addr).getSession().sendMessage(ResultWebSocket.txtMsg(contentType, jsonObject));
 
             MeetingChattingEntity meetingChattingEntity = new MeetingChattingEntity(
                     null, sendId, addrType, null,
@@ -189,11 +200,11 @@ public class SessionManage {
                     null, content, addr, addrType, null
             );
             meetingChattingDao.insert(meetingChattingEntity);
-           // rabbitTemplate.convertAndSend(RabbitMqConfig.EXCHANGE_NAME, RabbitMqConfig.KEY1, GeneralUtils.objectToString("insert", meetingChattingEntity));
+            // rabbitTemplate.convertAndSend(RabbitMqConfig.EXCHANGE_NAME, RabbitMqConfig.KEY1, GeneralUtils.objectToString("insert", meetingChattingEntity));
 
         } catch (IOException e) {
             e.printStackTrace();
-            logger.error("sessionmanger.handleTextMeg()==>"+"addrId:"+addr);
+            logger.error("sessionmanger.handleTextMeg()==>" + "addrId:" + addr);
         }
 
     }
@@ -201,13 +212,14 @@ public class SessionManage {
     //系统消息
     public void sendMessageSys(Integer sendType, Object msg, Long addrId) {
         try {
-            clients.get(addrId).getSession().sendMessage(ResultWebSocket.txtMsg(sendType,msg));
+            clients.get(addrId).getSession().sendMessage(ResultWebSocket.txtMsg(sendType, msg));
         } catch (IOException e) {
             e.printStackTrace();
-        logger.error("==>sendMessageSys()"+"addrId:"+addrId);
+            logger.error("==>sendMessageSys()" + "addrId:" + addrId);
         }
 
     }
+
 
     /**
      * 发消息
@@ -233,11 +245,13 @@ public class SessionManage {
             }
         } catch (Exception e) {
             e.printStackTrace();
-            logger.error("==>sendMessage()"+"addrId:"+addrId);
+            logger.error("==>sendMessage()" + "addrId:" + addrId);
         }
     }
+
     /**
      * 是否初次进入小会场
+     *
      * @param meetingId  下会场id
      * @param memberId
      * @param memberType
@@ -268,4 +282,17 @@ public class SessionManage {
         return false;
     }
 
+    public void smallMeeing(String meetingId, WebSocketSession session, Long userid) {
+        CopyOnWriteArraySet<WebSocketSession> webSocketSessions = smallClent.get(meetingId);
+        if (null == webSocketSessions) {
+            webSocketSessions = new CopyOnWriteArraySet<>();
+        }
+        webSocketSessions.add(session);
+        smallClent.put(meetingId, webSocketSessions);
+        try {
+            session.sendMessage(ResultWebSocket.txtMsg(111, "小会场创建成功" + userid + "加入小会场"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }

@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
  * @author baohan
@@ -54,16 +55,19 @@ public class MyWebSocketHandler extends TextWebSocketHandler {
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         Map<String, Object> attributes = session.getAttributes();
-        if (null == attributes.get("meetingId") || "".equals(attributes.get("meetingId"))) {
+        String meetingId =String.valueOf(attributes.get("meetingId")) ;
+        Long userid = new Long((String) attributes.get("userid"));
+
+        //大会场连接
+        if (null == meetingId || "".equals(meetingId)) {
             String talkerType = (String) attributes.get("talkerType");
-            Long userid = new Long((String) attributes.get("userid"));
             String bigId = (String) attributes.get("bigId");
             sessionManage.adds(session, talkerType, userid, bigId);
             log.info("connect websocket success.......userid,bigid" + userid + "," + bigId);
             return;
         }
-        sessionManage.sendMessage("all", ResultWebSocket.txtMsg(111, "小会场创建成功"), 0L);
-
+        //小会场
+        sessionManage.smallMeeing(meetingId,session, userid);
 
     }
 
@@ -168,7 +172,7 @@ public class MyWebSocketHandler extends TextWebSocketHandler {
             //判断是否是初次进入 初次进入小会场
         sessionManage.creatMeetActor(meetingId, memberId, memberType, waiterId, waiterType);
         //发送
-        sessionManage.handleTextMeg(addr, content, sendId, addrType, contentType, jsonObject);
+        sessionManage.handleTextMeg(addr, content, sendId, addrType, contentType, jsonObject,meetingId);
     }
 
     /**
