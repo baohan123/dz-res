@@ -7,17 +7,20 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.dz.dzim.common.GeneralUtils;
 import com.dz.dzim.common.Result;
+import com.dz.dzim.common.ResultWebSocket;
 import com.dz.dzim.common.SysConstant;
 import com.dz.dzim.exception.handler.ExceptionHandle;
 import com.dz.dzim.mapper.ChatRecordMapper;
 import com.dz.dzim.mapper.MeetingChattingDao;
 import com.dz.dzim.mapper.MeetingDao;
 import com.dz.dzim.mapper.MeetingPlazaDao;
+import com.dz.dzim.pojo.OnlineUserNew;
 import com.dz.dzim.pojo.doman.MeetingChattingEntity;
 import com.dz.dzim.pojo.doman.MeetingEntity;
 import com.dz.dzim.pojo.doman.MeetingPlazaEntity;
 import com.dz.dzim.pojo.vo.QueryParams;
 import com.dz.dzim.pojo.vo.ResponseVO;
+import com.dz.dzim.service.SessionManage;
 import com.dz.dzim.service.UploadService;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -27,6 +30,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import javax.servlet.http.HttpServletRequest;
+import java.io.IOException;
 import java.util.*;
 import java.util.Date;
 import java.util.List;
@@ -35,7 +39,8 @@ import java.util.List;
 public class ChatController extends ExceptionHandle {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ChatController.class);
-
+    @Autowired
+    private SessionManage sessionManage;
 
     @Autowired
     private ChatRecordMapper chatRecordMapper;
@@ -97,11 +102,20 @@ public class ChatController extends ExceptionHandle {
      * 创建小会场
      */
     @PostMapping("/creatSmallSession")
-    public ResponseVO creatSmallSession() {
+    public ResponseVO creatSmallSession(@RequestBody JSONObject jsonObject) {
+        String waiterId = jsonObject.getString("waiterId");
+        String memberId = jsonObject.getString("memberId");
+        OnlineUserNew onlineUserNew = sessionManage.clients.get(memberId);
         String id = GeneralUtils.randomUUID(SysConstant.SEX);
         MeetingEntity meetingEntity = new MeetingEntity(id, new Date(), SysConstant.ZERO, new Date());
         meetingDao.insert(meetingEntity);
         //rabbitTemplate.convertAndSend(RabbitMqConfig.EXCHANGE_NAME, RabbitMqConfig.KEY4, GeneralUtils.objectToString("insert", meetingEntity));
+        try {
+            onlineUserNew.getSession().sendMessage(ResultWebSocket.txtMsg(222, "发给用户的小会场id:"+id));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         return new ResponseVO(id);
     }
 
